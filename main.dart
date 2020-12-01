@@ -1,4 +1,9 @@
+import 'dart:io';
+
+import 'src/lexer.dart';
+
 void main() {
-  // A calculator interpreter
-  print('Interpreter');
+  print('EXPRESSION: ');
+  String expression = stdin.readLineSync();
+  getToken(expression)?.forEach((element) {print(element);});
 }
