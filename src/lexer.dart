@@ -1,128 +1,68 @@
-enum TOKENS {
-  ASSIGN,
-  ADD,
-  SUBTRACT,
-  MULTIPLY,
-  DIVIDE,
-  POWER,
-  OPEN_PARENTHESIS,
-  CLOSE_PARENTHESIS,
-  PERCENT,
-  FACTORIAL,
-  SEPARATOR,
-  MOD,
-  SIN,
-  COSEC,
-  COS,
-  SEC,
-  TAN,
-  COTAN,
-  LOG,
-  LN,
-  AVG,
-  ABS,
-  FLOOR,
-  CEIL,
-  ROUND,
+enum TOKEN_TYPE {
+  EOF,
   NUMBER,
-  PI,
-  E,
-  IDENTIFIER,
+  ADD, SUBTRACT, MULTIPLY, DIVIDE,
+  OPEN_PARENTHESIS, CLOSE_PARENTHESIS
 }
 
-RegExp isDigit = RegExp(r'^\d$');
-RegExp isNum = RegExp(r'^\d$|^\d+\.?\d+$');
-RegExp isLetter = RegExp(r'^[a-zA-Z]$');
-RegExp isIdentifier = RegExp('^${isLetter}+(\\d|${isLetter})*\$');
+class Lexer {
+  static bool isDigit(String value) => RegExp(r'[0-9]').hasMatch(value);
+  static bool isLetter(String value) => RegExp(r'^[a-zA-Z]$').hasMatch(value);
+  static bool isNumber(String value) => RegExp(r'^\d$|^\d+\.?\d+$').hasMatch(value);
 
-// Operators
-Map<String, TOKENS> operators = {
-  '=': TOKENS.ASSIGN,
-  '+': TOKENS.ADD,
-  '-': TOKENS.SUBTRACT,
-  '*': TOKENS.MULTIPLY,
-  '/': TOKENS.DIVIDE,
-  '^': TOKENS.POWER,
-  '(': TOKENS.OPEN_PARENTHESIS,
-  ')': TOKENS.CLOSE_PARENTHESIS,
-  '%': TOKENS.PERCENT,
-  '!': TOKENS.FACTORIAL,
-  ',': TOKENS.SEPARATOR,
-};
+  static final Map<String, TOKEN_TYPE> specialCharacters = {
+    '+': TOKEN_TYPE.ADD,
+    '-': TOKEN_TYPE.SUBTRACT,
+    '*': TOKEN_TYPE.MULTIPLY,
+    '/': TOKEN_TYPE.DIVIDE,
+    '(': TOKEN_TYPE.OPEN_PARENTHESIS,
+    ')': TOKEN_TYPE.CLOSE_PARENTHESIS
+  };
 
-// Operations
-Map<String, TOKENS> operations = {
-  'mod': TOKENS.MOD,
-  'sin': TOKENS.SIN,
-  'csc': TOKENS.COSEC,
-  'cos': TOKENS.COS,
-  'sec': TOKENS.SEC,
-  'tan': TOKENS.TAN,
-  'cot': TOKENS.COTAN,
-  'log': TOKENS.LOG,
-  'ln': TOKENS.LN,
-  'avg': TOKENS.AVG,
-  'abs': TOKENS.ABS,
-  'flr': TOKENS.FLOOR,
-  'ceil': TOKENS.CEIL,
-  'round': TOKENS.ROUND,
-};
+  static final Map<String, TOKEN_TYPE> _functions = {
+  };
 
-// Constants
-Map<String, TOKENS> constants = {
-  'pi': TOKENS.PI,
-  'e': TOKENS.E,
-};
+  static List<Map<TOKEN_TYPE, String>> getTokens(String str) {
+    List<Map<TOKEN_TYPE, String>> tokens = List<Map<TOKEN_TYPE,String>>();
 
-/// Tokenization
-List getToken(String str) {
-  List<TOKENS> tokens = [];
-
-  str = str.replaceAll(' ', ''); // Removes spaces
-  int i = 0; // Index
-  while (i < str.length) {
-    if (operators.containsKey(str[i])) {
-      // Operators
-      tokens.add(operators[str[i]]);
-      i++;
-    } else {
-      // Operands
-      String temp = '';
-      if (isDigit.hasMatch(str[i])) {
-        // Numbers
-        while (i < str.length && (isDigit.hasMatch(str[i]) || str[i] == '.')) {
-          temp += str[i];
-          i++;
-        }
-
-        if (isNum.hasMatch(temp)) {
-          tokens.add(TOKENS.NUMBER);
-        } else {
-          throw Exception('INVALID NUMBER(${temp})');
-        }
-      } else if(isLetter.hasMatch(str[i])) {
-        // Keywords
-        while (i < str.length && (isLetter.hasMatch(str[i]) || isDigit.hasMatch(str[i]))) {
-          temp += str[i];
-          i++;
-        }
-
-        if (operations.containsKey(temp)) {
-          // Reserved keywords (functions)
-          tokens.add(operations[temp]);
-        } else if (constants.containsKey(temp)) {
-          // Reserved keywords (constants)
-          tokens.add(constants[temp]);
-        } else {
-          // Unreserved keywords (identifiers)
-          tokens.add(TOKENS.IDENTIFIER);
-        }
+    str = str.replaceAll(' ', ''); // Remove spaces
+    int i = 0; // Index
+    
+    while (i < str.length) {
+      if (specialCharacters.containsKey(str[i])) {
+        tokens.add({specialCharacters[str[i]]: str[i]});
+        i++;
       } else {
-        // Invalid characters
-        throw Exception('INVALID CHARACTER(${str[i]}) FOUND AT POSITION(${i})');
+        String temp = '';
+        if (isDigit(str[i]) || str[i] == '.') {
+          while (i < str.length && (isDigit(str[i]) || str[i] == '.')) {
+            temp += str[i];
+            i++;
+          }
+
+          if (isNumber(temp)) {
+            tokens.add({TOKEN_TYPE.NUMBER: temp});
+          } else {
+            throw Exception('INVALID NUMBER(${temp})');
+          }
+        } else if (isLetter(str[i])) {
+          while (i < str.length && (isLetter(str[i]))) {
+            temp += str[i];
+            i++;
+          }
+
+          if (_functions.containsKey(temp)) {
+            tokens.add({_functions[temp]: temp});
+          } else {
+            throw Exception('INVALID FUNCTION(${temp})');
+          }
+        } else {
+          throw Exception('INVALID CHARACTER(${str[i]}) FOUND AT POSITION(${i})');
+        }
       }
     }
-  }
 
-  return tokens;
+    tokens.add({TOKEN_TYPE.EOF: '\$'});
+    return tokens;
+  } 
 }
