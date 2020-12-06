@@ -1,4 +1,5 @@
 enum TOKENS {
+  ASSIGN,
   ADD,
   SUBTRACT,
   MULTIPLY,
@@ -9,6 +10,7 @@ enum TOKENS {
   PERCENT,
   FACTORIAL,
   SEPARATOR,
+  MOD,
   SIN,
   COSEC,
   COS,
@@ -17,23 +19,25 @@ enum TOKENS {
   COTAN,
   LOG,
   LN,
-  MIN,
-  MAX,
   AVG,
   ABS,
   FLOOR,
   CEIL,
+  ROUND,
   NUMBER,
   PI,
-  E
+  E,
+  IDENTIFIER,
 }
 
-RegExp numProp = RegExp(r'[0-9\.]');
+RegExp isDigit = RegExp(r'^\d$');
 RegExp isNum = RegExp(r'^\d$|^\d+\.?\d+$');
-RegExp isLetter = RegExp(r'[a-zA-Z]');
+RegExp isLetter = RegExp(r'^[a-zA-Z]$');
+RegExp isIdentifier = RegExp('^${isLetter}+(\\d|${isLetter})*\$');
 
 // Operators
 Map<String, TOKENS> operators = {
+  '=': TOKENS.ASSIGN,
   '+': TOKENS.ADD,
   '-': TOKENS.SUBTRACT,
   '*': TOKENS.MULTIPLY,
@@ -48,20 +52,20 @@ Map<String, TOKENS> operators = {
 
 // Operations
 Map<String, TOKENS> operations = {
+  'mod': TOKENS.MOD,
   'sin': TOKENS.SIN,
-  'cosec': TOKENS.COSEC,
+  'csc': TOKENS.COSEC,
   'cos': TOKENS.COS,
   'sec': TOKENS.SEC,
   'tan': TOKENS.TAN,
-  'cotan': TOKENS.COTAN,
+  'cot': TOKENS.COTAN,
   'log': TOKENS.LOG,
   'ln': TOKENS.LN,
-  'min': TOKENS.MIN,
-  'max': TOKENS.MAX,
   'avg': TOKENS.AVG,
   'abs': TOKENS.ABS,
-  'floor': TOKENS.FLOOR,
+  'flr': TOKENS.FLOOR,
   'ceil': TOKENS.CEIL,
+  'round': TOKENS.ROUND,
 };
 
 // Constants
@@ -84,9 +88,9 @@ List getToken(String str) {
     } else {
       // Operands
       String temp = '';
-      if (numProp.hasMatch(str[i])) {
+      if (isDigit.hasMatch(str[i])) {
         // Numbers
-        while (i < str.length && numProp.hasMatch(str[i])) {
+        while (i < str.length && (isDigit.hasMatch(str[i]) || str[i] == '.')) {
           temp += str[i];
           i++;
         }
@@ -98,7 +102,7 @@ List getToken(String str) {
         }
       } else if(isLetter.hasMatch(str[i])) {
         // Keywords
-        while (i < str.length && isLetter.hasMatch(str[i])) {
+        while (i < str.length && (isLetter.hasMatch(str[i]) || isDigit.hasMatch(str[i]))) {
           temp += str[i];
           i++;
         }
@@ -111,7 +115,7 @@ List getToken(String str) {
           tokens.add(constants[temp]);
         } else {
           // Unreserved keywords (identifiers)
-          throw Exception('INVALID OPERATION(${temp})');
+          tokens.add(TOKENS.IDENTIFIER);
         }
       } else {
         // Invalid characters
