@@ -1,11 +1,22 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'src/lexer.dart';
 import 'src/parser.dart';
 
 void main() {
-  print('EXPRESSION: ');
-  String expression = stdin.readLineSync();
+  print('''
+    +============================+
+    |Supported Operations:       |
+    +----------------------------+
+    |- Addition & Subtraction    |
+    |- Multiplication & Division |
+    |- Exponential               |
+    +============================+
+  ''');
+  stdout.write('Enter an expression: ');
+  String expression = stdin.readLineSync(encoding: utf8);
   List<Map<TOKEN_TYPE, String>> tokens = Lexer.getTokens(expression);
-  print(Parser().parse(tokens));
+  print('TOKENS: $tokens\n');
+  print('RESULT: ${Parser().parse(tokens)}');
 }
