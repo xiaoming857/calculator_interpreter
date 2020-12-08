@@ -11,7 +11,7 @@ class Parser {
     return _instance;
   }
 
-  bool parse(List<Map<TOKEN_TYPE, String>> tokens) {
+  double parse(List<Map<TOKEN_TYPE, String>> tokens) {
     this._tokens = tokens;
     _instance._index = -1;
     return this._pStart();
@@ -28,54 +28,117 @@ class Parser {
     return false;
   }
 
-  bool _pStart() {
-    return this._pExpression() && this._expect(TOKEN_TYPE.EOF);
+  double _pStart() {
+    double result = this._pExpression();
+    if (this._expect(TOKEN_TYPE.EOF)) return result;
+
+    return null;
   }
 
 
-  bool _pExpression() {
-    return this._pTerm() && this._pExpressionPrime();
+  double _pExpression() {
+    double lNum = this._pTerm();
+    if (lNum != null) {
+      List<dynamic> rCalc = this._pExpressionPrime();
+      if (rCalc != null) {
+        if (rCalc[0] == TOKEN_TYPE.ADD) {
+          return lNum + rCalc[1];
+        } else if (rCalc[0] == TOKEN_TYPE.SUBTRACT) {
+          return lNum - rCalc[1];
+        }
+      }
+
+      return lNum;
+    }
+
+    return null;
   }
 
-  bool _pExpressionPrime() {
+
+  List<dynamic> _pExpressionPrime() {
     ++this._index;
-    if (this._tokens[this._index].containsKey(TOKEN_TYPE.ADD) || this._tokens[this._index].containsKey(TOKEN_TYPE.SUBTRACT)) {
-      return this._pTerm() && this._pExpressionPrime();
+
+    TOKEN_TYPE token = this._tokens[this._index].keys.first;
+    if (token == TOKEN_TYPE.ADD || token == TOKEN_TYPE.SUBTRACT) {
+      double lNum = this._pTerm();
+      List<dynamic> rCalc = this._pExpressionPrime();
+      
+      if (lNum != null) {
+        if (rCalc != null) {
+          if (rCalc[0] == TOKEN_TYPE.ADD) {
+            lNum = lNum + rCalc[1];
+          } else if (rCalc[0] == TOKEN_TYPE.SUBTRACT) {
+            lNum = lNum - rCalc[1];
+          } 
+        }
+
+        return [token, lNum];
+      }
     }
 
     --this._index;
-    return true;
+    return null;
   }
 
 
-  bool _pTerm() {
-    return this._pFactor() && this._pTermPrime();
+  double _pTerm() {
+    double lNum = this._pFactor();
+    if (lNum != null) {
+      List<dynamic> rCalc = this._pTermPrime();
+      if (rCalc != null) {
+        if (rCalc[0] == TOKEN_TYPE.MULTIPLY) {
+          return lNum * rCalc[1];
+        } else if (rCalc[0] == TOKEN_TYPE.DIVIDE) {
+          return lNum / rCalc[1];
+        }
+      }
+
+      return lNum;
+    }
+
+    return null;
   }
 
 
-  bool _pTermPrime() {
+  List<dynamic> _pTermPrime() {
     ++this._index;
-    if (this._tokens[this._index].containsKey(TOKEN_TYPE.MULTIPLY) || this._tokens[this._index].containsKey(TOKEN_TYPE.DIVIDE)) {
-      return this._pFactor() && this._pTermPrime();
+
+    TOKEN_TYPE token = this._tokens[this._index].keys.first;
+    if (token == TOKEN_TYPE.MULTIPLY || token == TOKEN_TYPE.DIVIDE) {
+      double lNum = this._pFactor();
+      List<dynamic >rCalc = this._pTermPrime();
+      
+      if (lNum != null) {
+        if (rCalc != null) {
+          if (rCalc[0] == TOKEN_TYPE.MULTIPLY) {
+            lNum = lNum * rCalc[1];
+          } else if (rCalc[0] == TOKEN_TYPE.DIVIDE) {
+            lNum = lNum / rCalc[1];
+          }
+        }
+
+        return [token, lNum];
+      }
     }
 
     --this._index;
-    return true;
+    return null;
   }
 
 
-  bool _pFactor() {
+  double _pFactor() {
     ++this._index;
     if (this._tokens[this._index].containsKey(TOKEN_TYPE.SUBTRACT)) {
-      return _pFactor();
+      return -_pFactor();
     } else if (this._tokens[this._index].containsKey(TOKEN_TYPE.NUMBER)) {
-      return true;
+      return double.parse(_tokens[this._index][TOKEN_TYPE.NUMBER]);
     } else if (this._tokens[this._index].containsKey(TOKEN_TYPE.OPEN_PARENTHESIS)) {
-      return this._pExpression() && this._expect(TOKEN_TYPE.CLOSE_PARENTHESIS);
+      double tempNum = this._pExpression();
+      if (tempNum != null && this._expect(TOKEN_TYPE.CLOSE_PARENTHESIS)) return tempNum;
     }
 
     print('${(this._tokens[this._index].containsKey(TOKEN_TYPE.EOF)) ? this._tokens[this._index - 1] : this._tokens[this._index]} is wrong!');
     --this._index;
-    return false;
+    return null;
   }
 }
