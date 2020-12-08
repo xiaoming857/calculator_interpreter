@@ -95,7 +95,7 @@ class Parser {
     ++this._index;
     TOKEN_TYPE token = this._tokens[this._index].keys.first;
     if (token == TOKEN_TYPE.MULTIPLY || token == TOKEN_TYPE.DIVIDE) {
-      double lNum = this._pFactor();
+      double lNum = this._pPower();
       if (lNum != null) {
         List<dynamic >rCalc = this._pTermPrime();
         if (rCalc != null) {
