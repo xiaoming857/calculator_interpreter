@@ -1,69 +1,59 @@
 enum TOKEN_TYPE {
   EOF,
   NUMBER,
-  ADD, SUBTRACT, MULTIPLY, DIVIDE, POWER,
-  OPEN_PARENTHESIS, CLOSE_PARENTHESIS
+  ADD, SUBTRACT, MULTIPLY, DIVIDE, POWER, MOD,
+  OPEN_PARENTHESIS, CLOSE_PARENTHESIS,
 }
 
 class Lexer {
-  static bool isDigit(String value) => RegExp(r'[0-9]').hasMatch(value);
-  static bool isLetter(String value) => RegExp(r'^[a-zA-Z]$').hasMatch(value);
-  static bool isNumber(String value) => RegExp(r'^\d$|^\d+\.?\d+$').hasMatch(value);
+  static final operators = ['+', '-', '*', '/', '^', '%']; // List of operators (that separates operands)
+  static bool isDigit(String value) => RegExp(r'^\d$').hasMatch(value);
+  static bool isNumber(String value) => RegExp(r'^[1-9]+\d*$|^\d*\.\d+$').hasMatch(value);
 
-  static final Map<String, TOKEN_TYPE> specialCharacters = {
-    '+': TOKEN_TYPE.ADD,
-    '-': TOKEN_TYPE.SUBTRACT,
-    '*': TOKEN_TYPE.MULTIPLY,
-    '/': TOKEN_TYPE.DIVIDE,
-    '^': TOKEN_TYPE.POWER,
-    '(': TOKEN_TYPE.OPEN_PARENTHESIS,
-    ')': TOKEN_TYPE.CLOSE_PARENTHESIS
-  };
+  // Get tokens from a string of arithmetic expression
+  static List<List<dynamic>> getTokens(String str) {
+    List<List<dynamic>> tokens = List<List<dynamic>>();
 
-  static final Map<String, TOKEN_TYPE> _functions = {
-  };
-
-  static List<Map<TOKEN_TYPE, String>> getTokens(String str) {
-    List<Map<TOKEN_TYPE, String>> tokens = List<Map<TOKEN_TYPE,String>>();
-
-    str = str.replaceAll(' ', ''); // Remove spaces
     int i = 0; // Index
-    
     while (i < str.length) {
-      if (specialCharacters.containsKey(str[i])) {
-        tokens.add({specialCharacters[str[i]]: str[i]});
-        i++;
-      } else {
-        String temp = '';
-        if (isDigit(str[i]) || str[i] == '.') {
-          while (i < str.length && (isDigit(str[i]) || str[i] == '.')) {
-            temp += str[i];
-            i++;
-          }
+      switch (str[i]) {
+        case ' ': break;
+        case '+': tokens.add([TOKEN_TYPE.ADD, '+', [i, i]]); break;
+        case '-': tokens.add([TOKEN_TYPE.SUBTRACT, '-', [i, i]]); break;
+        case '*': tokens.add([TOKEN_TYPE.MULTIPLY, '*', [i, i]]); break;
+        case '/': tokens.add([TOKEN_TYPE.DIVIDE, '/', [i, i]]); break;
+        case '^': tokens.add([TOKEN_TYPE.POWER, '^', [i, i]]); break;
+        case '%': tokens.add([TOKEN_TYPE.MOD, '%', [i, i]]); break;
+        case '(': tokens.add([TOKEN_TYPE.OPEN_PARENTHESIS, '(', [i, i]]); break;
+        case ')': tokens.add([TOKEN_TYPE.CLOSE_PARENTHESIS,')', [i, i]]); break;
+        default: {
+          String temp = '';
+          int iStart = i; // Start index
+          if (isDigit(str[i])) {
+            // Validate digit
+            while (i < str.length && (isDigit(str[i]) || str[i] == '.' || str[i] == ' ')) {
+              temp += str[i];
+              i++;
+            }
 
-          if (isNumber(temp)) {
-            tokens.add({TOKEN_TYPE.NUMBER: temp});
-          } else {
-            throw Exception('INVALID NUMBER(${temp})');
-          }
-        } else if (isLetter(str[i])) {
-          while (i < str.length && (isLetter(str[i]))) {
-            temp += str[i];
-            i++;
-          }
+            temp = temp.trimRight(); // Removes succeeding spaces
+            int iEnd = iStart + temp.length - 1; // End index
 
-          if (_functions.containsKey(temp)) {
-            tokens.add({_functions[temp]: temp});
+            if (isNumber(temp)) tokens.add([TOKEN_TYPE.NUMBER, temp, [iStart, iEnd]]); // Valid number
+            else throw Exception('Invalid number ($temp) at index [$iStart, $iEnd]'); // Invalid number
+
+            continue;
+
           } else {
-            throw Exception('INVALID FUNCTION(${temp})');
+            throw Exception('Invalid character (${str[i]}) at index (${i})!');
           }
-        } else {
-          throw Exception('INVALID CHARACTER(${str[i]}) FOUND AT POSITION(${i})');
         }
       }
+
+      i++;
     }
 
-    tokens.add({TOKEN_TYPE.EOF: '\$'});
+    tokens.add([TOKEN_TYPE.EOF, '\$', [i, i]]); // Marks ending
     return tokens;
   } 
 }
