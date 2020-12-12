@@ -1,9 +1,8 @@
-import 'dart:math';
-
 import 'lexer.dart';
+import 'ast.dart';
 
 class Parser {
-  List<Map<TOKEN_TYPE, String>> _tokens;
+  List<List<dynamic>> _tokens;
   int _index;
 
 
@@ -16,7 +15,7 @@ class Parser {
   }
 
 
-  double parse(List<Map<TOKEN_TYPE, String>> tokens) {
+  Node parse(List<List<dynamic>> tokens) {
     this._tokens = tokens;
     _instance._index = -1;
     return this._pStart();
@@ -25,140 +24,161 @@ class Parser {
 
   bool _expect(TOKEN_TYPE _token) {
     ++this._index;
-    if (this._tokens[this._index].containsKey(_token)) return true;
+    if (this._tokens[this._index][0] == _token) return true;
     --this._index;
     return false;
   }
 
 
-  double _pStart() {
-    double result = this._pExpression();
+  Node _pStart() {
+    Node result = this._pExpression();
     if (this._expect(TOKEN_TYPE.EOF)) return result;
     return null;
   }
 
 
-  double _pExpression() {
-    double lNum = this._pTerm();
-    if (lNum != null) {
-      List<dynamic> rCalc = this._pExpressionPrime();
-      if (rCalc != null) {
-          switch (rCalc[0]) {
-            case TOKEN_TYPE.ADD: lNum += rCalc[1]; break;
-            case TOKEN_TYPE.SUBTRACT: lNum -= rCalc[1]; break;
-          }
-        }
-      return lNum;
+  Node _pExpression() {
+    Node lVal = this._pTerm();
+
+    if (lVal != null) {
+      Node rCalc = this._pExpressionPrime(lVal);
+      if (rCalc != null) return rCalc;
+      return lVal;
     }
+    
     return null;
   }
 
-
-  List<dynamic> _pExpressionPrime() {
+  Node _pExpressionPrime(Node lVal) {
     ++this._index;
-    TOKEN_TYPE token = this._tokens[this._index].keys.first;
-    if (token == TOKEN_TYPE.ADD || token == TOKEN_TYPE.SUBTRACT) {
-      double lNum = this._pTerm();
-      if (lNum != null) {
-        List<dynamic> rCalc = this._pExpressionPrime();
+
+    List<dynamic> token = this._tokens[this._index];
+    if (token[0] == TOKEN_TYPE.ADD || token[0] == TOKEN_TYPE.SUBTRACT) {
+      Node rVal = this._pTerm();
+      if (rVal != null) {
+        Node rCalc = this._pExpressionPrime(rVal);
         if (rCalc != null) {
-          switch (rCalc[0]) {
-            case TOKEN_TYPE.ADD: lNum += rCalc[1]; break;
-            case TOKEN_TYPE.SUBTRACT: lNum -= rCalc[1]; break;
-          }
+          return BinaryOperation(
+            Operator(token[0], token[1]),
+            lVal,
+            rCalc,
+          );
         }
-        return [token, lNum];
+        
+        return BinaryOperation(
+          Operator(token[0], token[1]),
+          lVal,
+          rVal,
+        );
       }
     }
+
     --this._index;
     return null;
   }
 
 
-  double _pTerm() {
-    double lNum = this._pPower();
-    if (lNum != null) {
-      List<dynamic> rCalc = this._pTermPrime();
-      if (rCalc != null) {
-        switch (rCalc[0]) {
-          case TOKEN_TYPE.MULTIPLY: lNum *= rCalc[1]; break;
-          case TOKEN_TYPE.DIVIDE: lNum /= rCalc[1]; break;
-        }
-      }
-      return lNum;
+  Node _pTerm() {
+    Node lVal = this._pPower();
+
+    if (lVal != null) {
+      Node rCalc = this._pTermPrime(lVal);
+      if (rCalc != null) return rCalc;
+      return lVal;
     }
+    
     return null;
   }
 
 
-  List<dynamic> _pTermPrime() {
+  Node _pTermPrime(Node lVal) {
     ++this._index;
-    TOKEN_TYPE token = this._tokens[this._index].keys.first;
-    if (token == TOKEN_TYPE.MULTIPLY || token == TOKEN_TYPE.DIVIDE) {
-      double lNum = this._pPower();
-      if (lNum != null) {
-        List<dynamic >rCalc = this._pTermPrime();
+
+    List<dynamic> token = this._tokens[this._index];
+    if (token[0] == TOKEN_TYPE.MULTIPLY || token[0] == TOKEN_TYPE.DIVIDE || token[0] == TOKEN_TYPE.MOD) {
+      Node rVal = this._pPower();
+      if (rVal != null) {
+        Node rCalc = this._pTermPrime(rVal);
         if (rCalc != null) {
-          switch (rCalc[0]) {
-            case TOKEN_TYPE.MULTIPLY: lNum *= rCalc[1]; break;
-            case TOKEN_TYPE.DIVIDE: lNum /= rCalc[1]; break;
-          }
+          return BinaryOperation(
+            Operator(token[0], token[1]),
+            lVal,
+            rCalc,
+          );
         }
-        return [token, lNum];
+        
+        return BinaryOperation(
+          Operator(token[0], token[1]),
+          lVal,
+          rVal,
+        );
       }
     }
+
+    --this._index;
+    return null;
+  }
+
+  
+  Node _pPower() {
+    Node lVal = this._pFactor();
+
+    if (lVal != null) {
+      Node rCalc = this._pPowerPrime(lVal);
+      if (rCalc != null) return rCalc;
+      return lVal;
+    }
+    
+    return null;
+  }
+
+
+  Node _pPowerPrime(Node lVal) {
+    ++this._index;
+
+    List<dynamic> token = this._tokens[this._index];
+    if (token[0] == TOKEN_TYPE.POWER) {
+      Node rVal = this._pFactor();
+      if (rVal != null) {
+        Node rCalc = this._pPowerPrime(rVal);
+        if (rCalc != null) {
+          return BinaryOperation(
+            Operator(token[0], token[1]),
+            lVal,
+            rCalc,
+          );
+        }
+        
+        return BinaryOperation(
+          Operator(token[0], token[1]),
+          lVal,
+          rVal,
+        );
+      }
+    }
+
     --this._index;
     return null;
   }
 
 
-  double _pPower() {
-    double lNum = this._pFactor();
-    if (lNum != null) {
-      List<dynamic> rCalc = this._pPowerPrime();
-      if (rCalc != null) {
-        switch (rCalc[0]) {
-          case TOKEN_TYPE.POWER: lNum = pow(lNum, rCalc[1]); break;
-        }
-      }
-      return lNum;
-    }
-    return null;
-  }
-
-
-  List<dynamic> _pPowerPrime() {
+  Node _pFactor() {
     ++this._index;
-    TOKEN_TYPE token = this._tokens[this._index].keys.first;
-    if (token == TOKEN_TYPE.POWER) {
-      double lNum = this._pFactor();
-      if (lNum != null) {
-        List<dynamic> rCalc = this._pPowerPrime();
-        if (rCalc != null) {
-          switch (rCalc[0]) {
-            case TOKEN_TYPE.POWER: lNum = pow(lNum, rCalc[1]); break;
-          }
-        }
-      }
-      return [token, lNum];
-    }
-    --this._index;
-    return null;
-  }
 
-
-  double _pFactor() {
-    ++this._index;
-    if (this._tokens[this._index].containsKey(TOKEN_TYPE.SUBTRACT)) {
-      return -_pFactor();
-    } else if (this._tokens[this._index].containsKey(TOKEN_TYPE.NUMBER)) {
-      return double.parse(_tokens[this._index][TOKEN_TYPE.NUMBER]);
-    } else if (this._tokens[this._index].containsKey(TOKEN_TYPE.OPEN_PARENTHESIS)) {
-      double tempNum = this._pExpression();
-      if (tempNum != null && this._expect(TOKEN_TYPE.CLOSE_PARENTHESIS)) return tempNum;
+    List<dynamic> token = this._tokens[this._index];
+    if (token[0] == TOKEN_TYPE.SUBTRACT) {
+      return UnaryOperation(
+        Operator(token[0], token[1]),
+        _pFactor(),
+      );
+    } else if (token[0] == TOKEN_TYPE.NUMBER) {
+      return Number(double.parse(_tokens[this._index][1]));
+    } else if (token[0] == TOKEN_TYPE.OPEN_PARENTHESIS) {
+      Node rCalc = this._pExpression();
+      if (this._expect(TOKEN_TYPE.CLOSE_PARENTHESIS)) return rCalc;
     }
 
-    print('${(this._tokens[this._index].containsKey(TOKEN_TYPE.EOF)) ? this._tokens[this._index - 1] : this._tokens[this._index]} is wrong!');
+    print('${(this._tokens[this._index][0] == TOKEN_TYPE.EOF) ? this._tokens[this._index - 1] : this._tokens[this._index]} is wrong!');
     --this._index;
     return null;
   }
