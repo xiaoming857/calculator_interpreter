@@ -53,7 +53,7 @@ class Parser {
     ++this._index;
 
     List<dynamic> token = this._tokens[this._index];
-    if (token[0] == TOKEN_TYPE.ADD || token[0] == TOKEN_TYPE.SUBTRACT) {
+    if (token[0] == TOKEN_TYPE.PLUS || token[0] == TOKEN_TYPE.MINUS) {
       Node rVal = this._pTerm();
       if (rVal != null) {
         Node rCalc = this._pExpressionPrime(rVal);
@@ -95,7 +95,7 @@ class Parser {
     ++this._index;
 
     List<dynamic> token = this._tokens[this._index];
-    if (token[0] == TOKEN_TYPE.MULTIPLY || token[0] == TOKEN_TYPE.DIVIDE || token[0] == TOKEN_TYPE.MOD) {
+    if (token[0] == TOKEN_TYPE.ASTERISK || token[0] == TOKEN_TYPE.SLASH || token[0] == TOKEN_TYPE.PERCENT) {
       Node rVal = this._pPower();
       if (rVal != null) {
         Node rCalc = this._pTermPrime(rVal);
@@ -137,7 +137,7 @@ class Parser {
     ++this._index;
 
     List<dynamic> token = this._tokens[this._index];
-    if (token[0] == TOKEN_TYPE.POWER) {
+    if (token[0] == TOKEN_TYPE.CARET) {
       Node rVal = this._pFactor();
       if (rVal != null) {
         Node rCalc = this._pPowerPrime(rVal);
@@ -166,7 +166,7 @@ class Parser {
     ++this._index;
 
     List<dynamic> token = this._tokens[this._index];
-    if (token[0] == TOKEN_TYPE.SUBTRACT) {
+    if (token[0] == TOKEN_TYPE.MINUS) {
       return UnaryOperation(
         Operator(token[0], token[1]),
         _pFactor(),

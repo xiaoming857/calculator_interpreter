@@ -1,14 +1,17 @@
 enum TOKEN_TYPE {
   EOF,
+  IDENTIFIER,
   NUMBER,
-  ADD, SUBTRACT, MULTIPLY, DIVIDE, POWER, MOD,
+  EQUAL, PLUS, MINUS, ASTERISK, SLASH, CARET, PERCENT,
   OPEN_PARENTHESIS, CLOSE_PARENTHESIS,
 }
 
 class Lexer {
-  static final operators = ['+', '-', '*', '/', '^', '%']; // List of operators (that separates operands)
+  static final operators = ['=', '+', '-', '*', '/', '^', '%']; // List of operators (that separates operands)
   static bool isDigit(String value) => RegExp(r'^\d$').hasMatch(value);
   static bool isNumber(String value) => RegExp(r'^(0$|[1-9]+)\d*$|^\d+\.\d+$').hasMatch(value);
+  static bool isLetter(String value) => RegExp(r'^[a-zA-Z]$').hasMatch(value);
+  static bool isIdentifier(String value) => RegExp(r'^[a-zA-Z_]+[a-zA-Z\d_]*$').hasMatch(value);
 
   // Get tokens from a string of arithmetic expression
   static List<List<dynamic>> getTokens(String str) {
@@ -18,12 +21,13 @@ class Lexer {
     while (i < str.length) {
       switch (str[i]) {
         case ' ': break;
-        case '+': tokens.add([TOKEN_TYPE.ADD, '+', [i, i]]); break;
-        case '-': tokens.add([TOKEN_TYPE.SUBTRACT, '-', [i, i]]); break;
-        case '*': tokens.add([TOKEN_TYPE.MULTIPLY, '*', [i, i]]); break;
-        case '/': tokens.add([TOKEN_TYPE.DIVIDE, '/', [i, i]]); break;
-        case '^': tokens.add([TOKEN_TYPE.POWER, '^', [i, i]]); break;
-        case '%': tokens.add([TOKEN_TYPE.MOD, '%', [i, i]]); break;
+        case '=': tokens.add([TOKEN_TYPE.EQUAL, '=', [i, i]]); break;
+        case '+': tokens.add([TOKEN_TYPE.PLUS, '+', [i, i]]); break;
+        case '-': tokens.add([TOKEN_TYPE.MINUS, '-', [i, i]]); break;
+        case '*': tokens.add([TOKEN_TYPE.ASTERISK, '*', [i, i]]); break;
+        case '/': tokens.add([TOKEN_TYPE.SLASH, '/', [i, i]]); break;
+        case '^': tokens.add([TOKEN_TYPE.CARET, '^', [i, i]]); break;
+        case '%': tokens.add([TOKEN_TYPE.PERCENT, '%', [i, i]]); break;
         case '(': tokens.add([TOKEN_TYPE.OPEN_PARENTHESIS, '(', [i, i]]); break;
         case ')': tokens.add([TOKEN_TYPE.CLOSE_PARENTHESIS,')', [i, i]]); break;
         default: {
@@ -36,7 +40,7 @@ class Lexer {
               i++;
             }
 
-            temp = temp.trimRight(); // Removes succeeding spaces
+            temp = temp.trimRight(); // Remove succeeding spaces
             int iEnd = iStart + temp.length - 1; // End index
 
             if (isNumber(temp)) tokens.add([TOKEN_TYPE.NUMBER, temp, [iStart, iEnd]]); // Valid number
@@ -44,6 +48,21 @@ class Lexer {
 
             continue;
 
+          } else if (isLetter(str[i]) || str[i] == '_') {
+            // Validate identifier
+            while (i < str.length && (isLetter(str[i]) || isNumber(str[i]) || str[i] == '_')) {
+              temp += str[i];
+              i++;
+            }
+
+            temp = temp.trimRight(); // Remove succeeding spaces
+            int iEnd = iStart + temp.length - 1; // End index
+
+            if (isIdentifier(temp)) tokens.add([TOKEN_TYPE.IDENTIFIER, temp, [iStart, iEnd]]); // Valid identifier
+            else throw Exception('Invalid number ($temp) at index [$iStart, $iEnd]'); // Invalid identifier
+            
+            continue;
+            
           } else {
             throw Exception('Invalid character (${str[i]}) at index (${i})!');
           }
