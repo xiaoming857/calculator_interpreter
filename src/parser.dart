@@ -49,6 +49,7 @@ class Parser {
     return null;
   }
 
+
   Node _pExpressionPrime(Node lVal) {
     ++this._index;
 
@@ -56,16 +57,8 @@ class Parser {
     if (token[0] == TOKEN_TYPE.PLUS || token[0] == TOKEN_TYPE.MINUS) {
       Node rVal = this._pTerm();
       if (rVal != null) {
-        Node rCalc = this._pExpressionPrime(rVal);
-        if (rCalc != null) {
-          return BinaryOperation(
-            Operator(token[0], token[1]),
-            lVal,
-            rCalc,
-          );
-        }
-        
-        return BinaryOperation(
+        Node rCalc = this._pExpressionPrime(BinaryOperation(Operator(token[0], token[1]), lVal, rVal));
+        return (rCalc != null) ? rCalc : BinaryOperation(
           Operator(token[0], token[1]),
           lVal,
           rVal,
@@ -98,16 +91,8 @@ class Parser {
     if (token[0] == TOKEN_TYPE.ASTERISK || token[0] == TOKEN_TYPE.SLASH || token[0] == TOKEN_TYPE.PERCENT) {
       Node rVal = this._pPower();
       if (rVal != null) {
-        Node rCalc = this._pTermPrime(rVal);
-        if (rCalc != null) {
-          return BinaryOperation(
-            Operator(token[0], token[1]),
-            lVal,
-            rCalc,
-          );
-        }
-        
-        return BinaryOperation(
+        Node rCalc = this._pTermPrime(BinaryOperation(Operator(token[0], token[1]), lVal, rVal));
+        return (rCalc != null) ? rCalc : BinaryOperation(
           Operator(token[0], token[1]),
           lVal,
           rVal,
@@ -140,16 +125,8 @@ class Parser {
     if (token[0] == TOKEN_TYPE.CARET) {
       Node rVal = this._pFactor();
       if (rVal != null) {
-        Node rCalc = this._pPowerPrime(rVal);
-        if (rCalc != null) {
-          return BinaryOperation(
-            Operator(token[0], token[1]),
-            lVal,
-            rCalc,
-          );
-        }
-        
-        return BinaryOperation(
+        Node rCalc = this._pPowerPrime(BinaryOperation(Operator(token[0], token[1]), lVal, rVal));
+        return (rCalc != null) ? rCalc : BinaryOperation(
           Operator(token[0], token[1]),
           lVal,
           rVal,
