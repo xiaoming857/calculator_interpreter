@@ -8,7 +8,7 @@ enum TOKEN_TYPE {
 
 class Lexer {
   static final List<String> operators = ['=', '+', '-', '*', '/', '^', '%']; // List of operators (that separates operands)
-  static final List<String> reservedKeywords = ['var'];
+  static final List<String> reservedKeywords = [];
   static bool isDigit(String value) => RegExp(r'^\d$').hasMatch(value);
   static bool isNumber(String value) => RegExp(r'^(0$|[1-9]+)\d*$|^\d+\.\d+$').hasMatch(value);
   static bool isLetter(String value) => RegExp(r'^[a-zA-Z]$').hasMatch(value);
