@@ -30,8 +30,25 @@ class Parser {
 
 
   Node _pStart() {
-    Node result = this._pExpression();
+    Node result = this._pAssignment();
     if (this._expect(TOKEN_TYPE.EOF)) return result;
+    return null;
+  }
+
+
+  Node _pAssignment() {
+    Node value = this._pExpression();
+    
+    if (value != null) {
+      if (value is Identifier) {
+        if (this._expect(TOKEN_TYPE.EQUAL)) {
+          return Assignment(value, this._pExpression());
+        }
+      }
+
+      return value;
+    }
+
     return null;
   }
 
@@ -160,6 +177,10 @@ class Parser {
     } else if (token[0] == TOKEN_TYPE.OPEN_PARENTHESIS) {
       Node rCalc = this._pExpression();
       if (this._expect(TOKEN_TYPE.CLOSE_PARENTHESIS)) return rCalc;
+    } else if (token[0] == TOKEN_TYPE.IDENTIFIER) {
+      return Identifier(
+        token[1],
+      );
     }
 
     throw Exception('${(this._tokens[this._index][0] == TOKEN_TYPE.EOF) ? this._tokens[this._index - 1] : this._tokens[this._index]} is wrong!');
