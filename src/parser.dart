@@ -25,8 +25,7 @@ class Parser {
   bool _expect(TOKEN_TYPE _token) {
     ++this._index;
     if (this._tokens[this._index][0] == _token) return true;
-    --this._index;
-    return false;
+    throw Exception('Unexpected token ${this._tokens[this._index]}, it is expceted to have token [$_token]');
   }
 
 
@@ -125,8 +124,16 @@ class Parser {
     if (token[0] == TOKEN_TYPE.CARET) {
       Node rVal = this._pFactor();
       if (rVal != null) {
-        Node rCalc = this._pPowerPrime(BinaryOperation(Operator(token[0], token[1]), lVal, rVal));
-        return (rCalc != null) ? rCalc : BinaryOperation(
+        Node rCalc = this._pPowerPrime(rVal);
+        if (rCalc != null) {
+          return BinaryOperation(
+            Operator(token[0], token[1]),
+            lVal,
+            rCalc,
+          );
+        }
+
+        return BinaryOperation(
           Operator(token[0], token[1]),
           lVal,
           rVal,
@@ -155,8 +162,6 @@ class Parser {
       if (this._expect(TOKEN_TYPE.CLOSE_PARENTHESIS)) return rCalc;
     }
 
-    print('${(this._tokens[this._index][0] == TOKEN_TYPE.EOF) ? this._tokens[this._index - 1] : this._tokens[this._index]} is wrong!');
-    --this._index;
-    return null;
+    throw Exception('${(this._tokens[this._index][0] == TOKEN_TYPE.EOF) ? this._tokens[this._index - 1] : this._tokens[this._index]} is wrong!');
   }
 }
