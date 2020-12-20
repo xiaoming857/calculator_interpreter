@@ -1,13 +1,14 @@
 enum TOKEN_TYPE {
   EOF,
-  IDENTIFIER,
+  IDENTIFIER, RESERVED_KEYWORD,
   NUMBER,
   EQUAL, PLUS, MINUS, ASTERISK, SLASH, CARET, PERCENT,
   OPEN_PARENTHESIS, CLOSE_PARENTHESIS,
 }
 
 class Lexer {
-  static final operators = ['=', '+', '-', '*', '/', '^', '%']; // List of operators (that separates operands)
+  static final List<String> operators = ['=', '+', '-', '*', '/', '^', '%']; // List of operators (that separates operands)
+  static final List<String> reservedKeywords = ['var'];
   static bool isDigit(String value) => RegExp(r'^\d$').hasMatch(value);
   static bool isNumber(String value) => RegExp(r'^(0$|[1-9]+)\d*$|^\d+\.\d+$').hasMatch(value);
   static bool isLetter(String value) => RegExp(r'^[a-zA-Z]$').hasMatch(value);
@@ -58,7 +59,10 @@ class Lexer {
             temp = temp.trimRight(); // Remove succeeding spaces
             int iEnd = iStart + temp.length - 1; // End index
 
-            if (isIdentifier(temp)) tokens.add([TOKEN_TYPE.IDENTIFIER, temp, [iStart, iEnd]]); // Valid identifier
+            if (isIdentifier(temp)) {
+              if (reservedKeywords.contains(temp)) tokens.add([TOKEN_TYPE.RESERVED_KEYWORD, temp, [iStart, iEnd]]); // Valid identifier and is a reserved keyword
+              else tokens.add([TOKEN_TYPE.IDENTIFIER, temp, [iStart, iEnd]]); // Valid identifier
+            }
             else throw Exception('Invalid number ($temp) at index [$iStart, $iEnd]'); // Invalid identifier
             
             continue;
