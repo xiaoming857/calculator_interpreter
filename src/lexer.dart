@@ -1,14 +1,15 @@
 enum TOKEN_TYPE {
   EOF,
-  IDENTIFIER, RESERVED_KEYWORD,
+  IDENTIFIER,
   NUMBER,
+  FUNCTION,
+  ARROW,
+  COMMA,
   EQUAL, PLUS, MINUS, ASTERISK, SLASH, CARET, PERCENT,
   OPEN_PARENTHESIS, CLOSE_PARENTHESIS,
 }
 
 class Lexer {
-  static final List<String> operators = ['=', '+', '-', '*', '/', '^', '%']; // List of operators (that separates operands)
-  static final List<String> reservedKeywords = [];
   static bool isDigit(String value) => RegExp(r'^\d$').hasMatch(value);
   static bool isNumber(String value) => RegExp(r'^(0$|[1-9]+)\d*$|^\d+\.\d+$').hasMatch(value);
   static bool isLetter(String value) => RegExp(r'^[a-zA-Z]$').hasMatch(value);
@@ -24,13 +25,21 @@ class Lexer {
         case ' ': break;
         case '=': tokens.add([TOKEN_TYPE.EQUAL, '=', [i, i]]); break;
         case '+': tokens.add([TOKEN_TYPE.PLUS, '+', [i, i]]); break;
-        case '-': tokens.add([TOKEN_TYPE.MINUS, '-', [i, i]]); break;
+        case '-': {
+          if (i + 1 < str.length && str[i + 1] == '>') {
+            tokens.add([TOKEN_TYPE.ARROW, '->', [i, i + 1]]);
+            ++i;
+          } else {
+            tokens.add([TOKEN_TYPE.MINUS, '-', [i, i]]);
+          }
+        } break;
         case '*': tokens.add([TOKEN_TYPE.ASTERISK, '*', [i, i]]); break;
         case '/': tokens.add([TOKEN_TYPE.SLASH, '/', [i, i]]); break;
         case '^': tokens.add([TOKEN_TYPE.CARET, '^', [i, i]]); break;
         case '%': tokens.add([TOKEN_TYPE.PERCENT, '%', [i, i]]); break;
         case '(': tokens.add([TOKEN_TYPE.OPEN_PARENTHESIS, '(', [i, i]]); break;
         case ')': tokens.add([TOKEN_TYPE.CLOSE_PARENTHESIS,')', [i, i]]); break;
+        case ',': tokens.add([TOKEN_TYPE.COMMA, ',', [i, i]]); break;
         default: {
           String temp = '';
           int iStart = i; // Start index
@@ -45,7 +54,7 @@ class Lexer {
             int iEnd = iStart + temp.length - 1; // End index
 
             if (isNumber(temp)) tokens.add([TOKEN_TYPE.NUMBER, temp, [iStart, iEnd]]); // Valid number
-            else throw Exception('Invalid number ($temp) at index [$iStart, $iEnd]'); // Invalid number
+            else throw Exception('Unexpected space between digits of index range [${iStart}, ${iEnd}]:\n\t${str}\n\t${' ' * (iStart+temp.indexOf(' '))}^'); // Invalid number
 
             continue;
 
@@ -60,15 +69,17 @@ class Lexer {
             int iEnd = iStart + temp.length - 1; // End index
 
             if (isIdentifier(temp)) {
-              if (reservedKeywords.contains(temp)) tokens.add([TOKEN_TYPE.RESERVED_KEYWORD, temp, [iStart, iEnd]]); // Valid identifier and is a reserved keyword
-              else tokens.add([TOKEN_TYPE.IDENTIFIER, temp, [iStart, iEnd]]); // Valid identifier
+              switch (temp) {
+                case 'func': tokens.add([TOKEN_TYPE.FUNCTION, temp, [iStart, iEnd]]); break;
+                default: tokens.add([TOKEN_TYPE.IDENTIFIER, temp, [iStart, iEnd]]);
+              }
             }
-            else throw Exception('Invalid number ($temp) at index [$iStart, $iEnd]'); // Invalid identifier
+            else throw Exception('Invalid identifier ($temp) of index range [$iStart, $iEnd]:\n\t${str}\n\t${' ' * iStart}^${'-' * (iEnd - iStart)}^'); // Invalid identifier
             
             continue;
             
           } else {
-            throw Exception('Invalid character (${str[i]}) at index (${i})!');
+            throw Exception('Invalid character (${str[i]}) at index [${iStart}]:\n\t${str}\n\t${' ' * (iStart)}^');
           }
         }
       }
