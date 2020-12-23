@@ -26,13 +26,16 @@ class Expression extends Node {
 
 class Assignment extends Statement {
   Identifier _identifier;
-  Node _value;
+  Node _expression;
 
-  Assignment(this._identifier, this._value);
+  Assignment(this._identifier, this._expression);
+
+  Identifier get identifier => this._identifier;
+  Node get expression => this._expression;
 
   @override
   String toString() {
-    return 'Assignemnt(${this._identifier} = ${this._value})';
+    return 'Assignment(${this._identifier} = ${this._expression})';
   }
 }
 
@@ -43,6 +46,10 @@ class BinaryOperation extends Expression {
   Node _rOperand;
 
   BinaryOperation(this._operator, this._lOperand, this._rOperand);
+
+  Operator get operator => this._operator;
+  Node get lOperand => this._lOperand;
+  Node get rOperand => this._rOperand;
 
   @override
   String toString() {
@@ -57,6 +64,9 @@ class UnaryOperation extends Expression {
 
   UnaryOperation(this._operator, this._operand);
 
+  Operator get operator => this._operator;
+  Node get operand => this._operand;
+
   @override
   String toString() {
     return 'UnOp(${this._operator} ${this._operand})';
@@ -65,10 +75,13 @@ class UnaryOperation extends Expression {
 
 
 class Operator extends Node {
-  TOKEN_TYPE _token;
+  TOKEN_TYPE _tokenType;
   String _symbol;
 
-  Operator(this._token, this._symbol);
+  Operator(this._tokenType, this._symbol);
+
+  TOKEN_TYPE get tokenType => this._tokenType;
+  String get symbol => this._symbol;
 
   @override
   String toString() {
@@ -77,11 +90,14 @@ class Operator extends Node {
 }
 
 
-class Number extends Node {
-  TOKEN_TYPE _token = TOKEN_TYPE.NUMBER;
+class Number extends Expression {
+  TOKEN_TYPE _tokenType = TOKEN_TYPE.NUMBER;
   double _value;
 
   Number(this._value);
+
+  TOKEN_TYPE get token => this._tokenType;
+  double get value => this._value;
 
   @override
   String toString() {
@@ -90,10 +106,12 @@ class Number extends Node {
 }
 
 
-class Identifier extends Node {
+class Identifier extends Expression {
   String _identifier;
 
   Identifier(this._identifier);
+
+  String get identifier => this._identifier;
 
   @override
   String toString() {
