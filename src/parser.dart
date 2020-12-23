@@ -30,26 +30,32 @@ class Parser {
 
 
   Node _pStart() {
-    Node result = this._pAssignment();
+    Node result = this._pStatement();
     if (this._expect(TOKEN_TYPE.EOF)) return result;
     return null;
   }
 
 
-  Node _pAssignment() {
-    Node value = this._pExpression();
-    
-    if (value != null) {
-      if (value is Identifier) {
-        if (this._expect(TOKEN_TYPE.EQUAL)) {
-          return Assignment(value, this._pExpression());
-        }
+  Node _pStatement() {
+    ++this._index;
+
+    List<dynamic> token = this._tokens[this._index];
+    if (token[0] == TOKEN_TYPE.IDENTIFIER) {
+      ++this._index;
+      
+      if (this._tokens[this._index][0] == TOKEN_TYPE.EQUAL) {
+        Node expression = this._pExpression();
+        if (expression == null) throw Exception('Expect Expression!');
+        return Assignment(
+          Identifier(token[1]),
+          expression,
+        );
       }
-
-      return value;
+      --this._index;
     }
-
-    return null;
+    --this._index;
+    
+    return this._pExpression();
   }
 
 
