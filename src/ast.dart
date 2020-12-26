@@ -40,6 +40,24 @@ class Assignment extends Statement {
 }
 
 
+class Function extends Statement {
+  Identifier _identifier;
+  Parameters _parameters;
+  Node _expression;
+
+  Function(this._identifier, this._parameters, this._expression);
+
+  Identifier get identifier => this._identifier;
+  Parameters get parameters => this._parameters;
+  Node get expression => this._expression;
+
+  @override
+  String toString() {
+    return 'Function(${this._identifier} ${this._parameters} -> ${this._expression})';
+  }
+}
+
+
 class BinaryOperation extends Expression {
   Operator _operator;
   Node _lOperand;
@@ -120,10 +138,56 @@ class Identifier extends Expression {
 }
 
 
+class FunctionCall extends Expression {
+  Identifier _identifier;
+  Arguments _arguments;
+
+  FunctionCall(this._identifier, this._arguments);
+
+  Identifier get identifier => this._identifier;
+  Arguments get arguments => this._arguments;
+
+  @override
+  String toString() {
+    return 'Function(${this._identifier} ${this._arguments})';
+  }
+}
+
+
+class Parameters extends Node {
+  List<Identifier> _parameters;
+
+  Parameters(this._parameters);
+
+  List<Identifier> get parameters => this._parameters.toList();
+
+  @override
+  String toString() {
+    return 'Parameters(${this._parameters})';
+  }
+}
+
+
+class Arguments extends Node {
+  List<Node> _arguments;
+
+  Arguments(this._arguments);
+
+  List<Node> get arguments => this._arguments.toList();
+
+  @override
+  String toString() {
+    return 'Arguments(${this._arguments})';
+  }
+}
+
+
 class AST {
   Node _root;
 
   AST(this._root);
+
+  Node get root => this._root;
 
   @override
   String toString() {
