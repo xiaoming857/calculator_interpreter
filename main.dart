@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'src/ast.dart';
 import 'src/lexer.dart';
 import 'src/parser.dart';
 
@@ -12,11 +13,21 @@ void main() {
     |- Addition & Subtraction              |
     |- Multiplication & Division & Modulus |
     |- Exponential                         |
+    |- Assignment                          |
+    |- Function                            |
     +======================================+
   ''');
-  stdout.write('Enter an expression: ');
-  String expression = stdin.readLineSync(encoding: utf8);
-  List<List<dynamic>> tokens = Lexer.getTokens(expression);
-  print('TOKENS: $tokens\n');
-  print('RESULT: ${Parser().parse(tokens).toString()}');
+
+  while (true) {
+    try {
+      stdout.write('Enter an expression: ');
+      String expression = stdin.readLineSync(encoding: utf8);
+      List<List<dynamic>> tokens = Lexer.getTokens(expression);
+      AST ast = Parser().parse(tokens);
+      print('TOKENS: $tokens\n');
+      print('AST: ${ast.toString()}\n');
+    } catch (e) {
+      print(e);
+    }
+  }
 }
