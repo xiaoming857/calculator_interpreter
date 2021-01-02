@@ -29,11 +29,8 @@ class Parser {
   }
 
 
-  bool _peek(TOKEN_TYPE _token) {
-    ++this._index;
-    if (this._tokens[this._index][0] == _token) return true;
-    --this._index;
-    return false;
+  bool _peek(TOKEN_TYPE token, [step = 1]) {
+    return (this._tokens[this._index + step][0] == token);
   }
 
 
@@ -83,7 +80,8 @@ class Parser {
     ++this._index;
     List<dynamic> token = this._tokens[this._index];
     if (token[0] == TOKEN_TYPE.IDENTIFIER && _peek(TOKEN_TYPE.EQUAL)) {
-      if (_peek(TOKEN_TYPE.EOF)) throw Exception('Expected an expression after ${this._tokens[this._index - 1]}!');
+      ++this._index;
+      if (_peek(TOKEN_TYPE.EOF)) throw Exception('Expected an expression after ${this._tokens[this._index]}!');
       Node expression = this._pExpression();
       return Assignment(
         Identifier(token[1]),
@@ -201,13 +199,14 @@ class Parser {
         _pFactor(),
       );
     } else if (token[0] == TOKEN_TYPE.NUMBER) {
-      return Number(double.parse(_tokens[this._index][1]));
+      return (!(_peek(TOKEN_TYPE.IDENTIFIER) || _peek(TOKEN_TYPE.NUMBER))) ? Number(double.parse(_tokens[this._index][1])) : throw Exception('Excpect an operator after an operand ${this._tokens[this._index]}!');
     } else if (token[0] == TOKEN_TYPE.OPEN_PARENTHESIS) {
       Node rCalc = this._pExpression();
       if (this._expect(TOKEN_TYPE.CLOSE_PARENTHESIS)) return rCalc;
     } else if (token[0] == TOKEN_TYPE.IDENTIFIER) {
       Node rCalc = Identifier(token[1]);
       if (this._peek(TOKEN_TYPE.OPEN_PARENTHESIS)) {
+        ++this._index;
         if (this._peek(TOKEN_TYPE.CLOSE_PARENTHESIS)) throw Exception('A function call is expected to have at least 1 argument!');
         rCalc = FunctionCall(
           rCalc,
@@ -215,16 +214,18 @@ class Parser {
         );
         _expect(TOKEN_TYPE.CLOSE_PARENTHESIS);
       }
+      if (_peek(TOKEN_TYPE.IDENTIFIER) || _peek(TOKEN_TYPE.NUMBER)) throw Exception('Excpect an operator after an operand!');
       return rCalc;
     }
 
-    
     if (this._index <= 0) {
-      if (_peek(TOKEN_TYPE.NUMBER) || _peek(TOKEN_TYPE.IDENTIFIER)) {
-        throw Exception('Unexpected token ${this._tokens[this._index]} without preceeded by any operand!');
-      } else {
-        throw Exception('Unexpected token ${this._tokens[this._index]} without preceeded and succeeded by any operand!');
-      }
+      Node lookAhead;
+      try {
+        lookAhead = _pFactor();
+      } catch (e) {}
+
+      if (lookAhead != null) throw Exception('Unexpected token ${this._tokens[this._index]} without preceeded by any operand!');
+      throw Exception('Unexpected token ${this._tokens[this._index]} without preceeded and succeeded by any operand!');
     } else {
       throw Exception('Unexpected token ${this._tokens[this._index]} after token ${this._tokens[this._index - 1]}! It is expected to be an operand!');
     }
@@ -245,7 +246,8 @@ class Parser {
 
   void _pParameterPrime(List<Identifier> parameters) {
     ++this._index;
-    if (this._tokens[this._index][0] == TOKEN_TYPE.COMMA) {
+    List<dynamic> token = this._tokens[this._index];
+    if (token[0] == TOKEN_TYPE.COMMA) {
       Node parameter = this._pIdentifier();
       if (parameter != null) {
         parameters.add(parameter);
@@ -253,6 +255,8 @@ class Parser {
         return;
       }
       throw Exception('Expect parameter after comma (,)!');
+    } else if (token[0] == TOKEN_TYPE.IDENTIFIER) {
+      throw Exception('Expect a comma (,) after an argument!');
     }
     --this._index;
     return;
@@ -273,7 +277,8 @@ class Parser {
 
   void _pArgumentPrime(List<Node> arguments) {
     ++this._index;
-    if (this._tokens[this._index][0] == TOKEN_TYPE.COMMA) {
+    List<dynamic> token = this._tokens[this._index];
+    if (token[0] == TOKEN_TYPE.COMMA) {
       Node argument = this._pExpression();
       if (argument != null) {
         arguments.add(argument);
@@ -281,6 +286,8 @@ class Parser {
         return;
       }
       throw Exception('Expect argument after comma (,)!');
+    } else if (token[0] == TOKEN_TYPE.IDENTIFIER || token[0] == TOKEN_TYPE.NUMBER) {
+      throw Exception('Expect a comma (,) after an argument!');
     }
     --this._index;
     return;
