@@ -25,7 +25,7 @@ class Parser {
   bool _expect(TOKEN_TYPE _token) {
     ++this._index;
     if (this._tokens[this._index][0] == _token) return true;
-    throw Exception('Unexpected token ${this._tokens[this._index]}, it is expceted to have token [$_token]');
+    throw Exception('Unexpected token ${this._tokens[this._index]}! it is expceted to have token [$_token]!');
   }
 
 
@@ -38,9 +38,43 @@ class Parser {
 
 
   Node _pStart() {
+    if (_peek(TOKEN_TYPE.EOF)) return null;
     Node result = this._pStatement();
+    if (result == null) result = this._pDeclaration();
     if (result == null) result = this._pExpression();
     if (this._expect(TOKEN_TYPE.EOF)) return result;
+    return null;
+  }
+
+
+  Node _pDeclaration() {
+    ++this._index;
+    List<dynamic> token = this._tokens[this._index];
+    if (token[0] == TOKEN_TYPE.FUNCTION) {
+      Identifier identifier = this._pIdentifier();
+      if (identifier == null) throw Exception('Expect function name!');
+      if (_expect(TOKEN_TYPE.OPEN_PARENTHESIS)) {
+        if (_peek(TOKEN_TYPE.CLOSE_PARENTHESIS)) throw Exception('A function is expected to have at least one parameter!');
+        Parameters parameters = this._pParameter();
+        if (parameters == null) throw Exception('Expecet a parameter!');
+
+        if (_expect(TOKEN_TYPE.CLOSE_PARENTHESIS) && _expect(TOKEN_TYPE.ARROW)) {
+          try {
+            Node expression = this._pExpression();
+            if (expression != null) {
+              return Function(
+                identifier,
+                parameters,
+                expression,
+              );
+            } 
+          } catch (e) {
+            throw Exception('Function expect expression body!');
+          }
+        }
+      }
+    }
+    --this._index;
     return null;
   }
 
@@ -48,38 +82,13 @@ class Parser {
   Node _pStatement() {
     ++this._index;
     List<dynamic> token = this._tokens[this._index];
-    if (token[0] == TOKEN_TYPE.IDENTIFIER) {
-      if (this._peek(TOKEN_TYPE.EQUAL)) {
-        Node expression = this._pExpression();
-        if (expression == null) throw Exception('Expect Expression!');
-        return Assignment(
-          Identifier(token[1]),
-          expression,
-        );
-      }
-    } else if (token[0] == TOKEN_TYPE.FUNCTION) {
-      ++this._index;
-      token = this._tokens[this._index];
-      if (token[0] == TOKEN_TYPE.IDENTIFIER) {
-        if (_expect(TOKEN_TYPE.OPEN_PARENTHESIS)) {
-          Parameters parameters = this._pParameter();
-          if (_expect(TOKEN_TYPE.CLOSE_PARENTHESIS) && _expect(TOKEN_TYPE.ARROW)) {
-            try {
-              Node expression = this._pExpression();
-              if (expression != null) {
-                return Function(
-                  Identifier(token[1]),
-                  parameters,
-                  expression,
-                );
-              } 
-            } catch (e) {
-              throw Exception('Function expect expression body!');
-            }
-          }
-        }
-      }
-      throw Exception('Expect function name!');
+    if (token[0] == TOKEN_TYPE.IDENTIFIER && _peek(TOKEN_TYPE.EQUAL)) {
+      if (_peek(TOKEN_TYPE.EOF)) throw Exception('Expected an expression after ${this._tokens[this._index - 1]}!');
+      Node expression = this._pExpression();
+      return Assignment(
+        Identifier(token[1]),
+        expression,
+      );
     }
     --this._index;
     return null;
@@ -199,6 +208,7 @@ class Parser {
     } else if (token[0] == TOKEN_TYPE.IDENTIFIER) {
       Node rCalc = Identifier(token[1]);
       if (this._peek(TOKEN_TYPE.OPEN_PARENTHESIS)) {
+        if (this._peek(TOKEN_TYPE.CLOSE_PARENTHESIS)) throw Exception('A function call is expected to have at least 1 argument!');
         rCalc = FunctionCall(
           rCalc,
           this._pArgument(),
@@ -207,7 +217,17 @@ class Parser {
       }
       return rCalc;
     }
-    throw Exception('${(this._tokens[this._index][0] == TOKEN_TYPE.EOF) ? this._tokens[this._index - 1] : this._tokens[this._index]} is wrong!');
+
+    
+    if (this._index <= 0) {
+      if (_peek(TOKEN_TYPE.NUMBER) || _peek(TOKEN_TYPE.IDENTIFIER)) {
+        throw Exception('Unexpected token ${this._tokens[this._index]} without preceeded by any operand!');
+      } else {
+        throw Exception('Unexpected token ${this._tokens[this._index]} without preceeded and succeeded by any operand!');
+      }
+    } else {
+      throw Exception('Unexpected token ${this._tokens[this._index]} after token ${this._tokens[this._index - 1]}! It is expected to be an operand!');
+    }
   }
 
 
@@ -219,8 +239,7 @@ class Parser {
       this._pParameterPrime(parameters);
       return Parameters(parameters);
     }
-    if (parameters.isEmpty) throw Exception('Function expects at least 1 parameter!');
-    throw Exception('Unexpected character ${this._tokens[this._index + 1]}');
+    return null;
   }
 
 
@@ -248,8 +267,7 @@ class Parser {
       this._pArgumentPrime(arguments);
       return Arguments(arguments);
     }
-    if (arguments.isEmpty) throw Exception('Function expects at least 1 argument!');
-    throw Exception('Unexpected character ${this._tokens[this._index + 1]}');
+    return null;
   }
 
 
