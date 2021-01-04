@@ -1,5 +1,39 @@
 import 'lexer.dart';
 
+
+class Error extends Node {
+  final String _code;
+  final List<dynamic> _token;
+  String _message;
+
+  String get code => this._code;
+  List<dynamic> get index => this._token;
+
+  Error(this._code, this._token, String Function(String token, int startIndex, int endIndex) message) {
+    this._message = message(this._token[0].toString(), this._token[2][0], this._token[2][1]);
+  }
+
+  @override
+  String toString() {
+    return this._message;
+  }
+}
+
+
+class AST {
+  Node _root;
+
+  AST(this._root);
+
+  Node get root => this._root;
+
+  @override
+  String toString() {
+    return 'AST(${this._root.toString()})';
+  }
+}
+
+
 class Node {
   @override
   String toString() {
@@ -178,19 +212,5 @@ class Arguments extends Node {
   @override
   String toString() {
     return 'Arguments(${this._arguments})';
-  }
-}
-
-
-class AST {
-  Node _root;
-
-  AST(this._root);
-
-  Node get root => this._root;
-
-  @override
-  String toString() {
-    return 'AST(${this._root.toString()})';
   }
 }

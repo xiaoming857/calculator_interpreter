@@ -22,9 +22,9 @@ void main() {
   while (true) {
     try {
       stdout.write('Enter an expression: ');
-      String expression = stdin.readLineSync(encoding: utf8);
-      List<List<dynamic>> tokens = Lexer.getTokens(expression);
-      AST ast = Parser().parse(tokens);
+      String code = stdin.readLineSync(encoding: utf8);
+      List<List<dynamic>> tokens = Lexer.getTokens(code);
+      AST ast = Parser().parse(tokens, code);
       double result = Interpreter.interpret(ast);
       print('TOKENS: $tokens\n');
       print('AST: ${ast.toString()}\n');
