@@ -1,10 +1,11 @@
 import 'lexer.dart';
 import 'ast.dart';
+import 'interpreter_error.dart';
+
 
 class Parser {
-  String _str;
   List<List<dynamic>> _tokens;
-  List<Error> _errors;
+  List<InterpreterError> _errors;
   int _index;
 
 
@@ -12,14 +13,12 @@ class Parser {
   static final Parser _instance = Parser._internal();
 
 
-
   factory Parser() {
     return _instance;
   }
 
 
-  AST parse(List<List<dynamic>> tokens, String str) {
-    this._str = str;
+  AST parse(List<List<dynamic>> tokens) {
     this._tokens = tokens;
     this._errors = [];
     this._index = -1;
@@ -30,19 +29,18 @@ class Parser {
   void _mustBe(List<TOKEN_TYPE> tokenTypes) {
     List<dynamic>token = this._tokens[this._index];
     while (!tokenTypes.contains(token[0]) && token[0] != TOKEN_TYPE.EOF) {
-      this._errors.add(Error(this._str, token, (String t, int s, int e) => 'Unexpected ${t} at index [${s}:${e}]!'));
+      this._errors.add(ParserError(token, (String t, int s, int e) => 'Unexpected ${t} at index [${s}:${e}]!'));
       token = this._tokens[++this._index];
     }
     --this._index;
   }
 
 
-  Node _expect(TOKEN_TYPE tokenType) {
+  bool _expect(TOKEN_TYPE tokenType) {
     List<dynamic> token = this._tokens[this._index + 1];
-    if (token[0] == tokenType) return null;
-    Error error = Error(this._str, token, (String t, int s, int e) => 'Unexpected ${t} at index [${s}:${e}]! it is expected to have token [$tokenType]!');
-    this._errors.add(error);
-    return error;
+    if (token[0] == tokenType) return true;
+    this._errors.add(ParserError(token, (String t, int s, int e) => 'Unexpected ${t} at index [${s}:${e}]! it is expected to have token [$tokenType]!'));
+    return false;
   }
 
 
@@ -75,7 +73,7 @@ class Parser {
     if (token[0] == TOKEN_TYPE.FUNCTION) {
       Identifier identifier = this._pIdentifier();
       if (identifier == null) {
-        this._errors.add(Error(this._str, token, (String t, int s, int e) => 'Expected a function name after ${t} of index [${s}:${e}]!'));
+        this._errors.add(ParserError(token, (String t, int s, int e) => 'Expected a function name after ${t} of index [${s}:${e}]!'));
       } else {
         token = this._tokens[this._index];
       }
@@ -86,12 +84,12 @@ class Parser {
           
         }
       } else {
-        this._errors.add(Error(this._str, token, (String t, int s, int e) => 'Expected an open parenthesis after ${t} of index [${s}:${e}]!'));
+        this._errors.add(ParserError(token, (String t, int s, int e) => 'Expected an open parenthesis after ${t} of index [${s}:${e}]!'));
       }
 
       Parameters parameters = this._pParameter();
       if (parameters == null) {
-        this._errors.add(Error(this._str, token, (String t, int s, int e) => 'Expected a parameter after ${t} of index [${s}:${e}]!'));
+        this._errors.add(ParserError(token, (String t, int s, int e) => 'Expected a parameter after ${t} of index [${s}:${e}]!'));
       } else {
         token = this._tokens[this._index];
       }
@@ -99,13 +97,13 @@ class Parser {
       if (this._peek(TOKEN_TYPE.CLOSE_PARENTHESIS)) {
         token = this._tokens[++this._index];
       } else {
-        this._errors.add(Error(this._str, token, (String t, int s, int e) => 'Expected a close parenthesis after ${t} of index [${s}:${e}]!'));
+        this._errors.add(ParserError(token, (String t, int s, int e) => 'Expected a close parenthesis after ${t} of index [${s}:${e}]!'));
       }
 
       if (this._peek(TOKEN_TYPE.ARROW)) {
         token = this._tokens[++this._index];
       } else {
-        this._errors.add(Error(this._str, token, (String t, int s, int e) => 'Expected an arrow after ${t} of index [${s}:${e}]!'));
+        this._errors.add(ParserError(token, (String t, int s, int e) => 'Expected an arrow after ${t} of index [${s}:${e}]!'));
       }
 
 
@@ -117,7 +115,7 @@ class Parser {
           expression,
         );
       } else {
-        this._errors.add(Error(this._str, token, (String t, int s, int e) => 'Expected an expression after ${t} of index [${s}:${e}]!'));
+        this._errors.add(ParserError(token, (String t, int s, int e) => 'Expected an expression after ${t} of index [${s}:${e}]!'));
       }
       return null;
     }
@@ -132,7 +130,7 @@ class Parser {
     if (token[0] == TOKEN_TYPE.IDENTIFIER && this._peek(TOKEN_TYPE.EQUAL)) {
       ++this._index;
       if (this._peek(TOKEN_TYPE.EOF)) {
-        this._errors.add(Error(this._str, this._tokens[this._index], (String t, int s, int e) => 'Expected an expression after ${t} of index [${s}:${e}]'));
+        this._errors.add(ParserError(this._tokens[this._index], (String t, int s, int e) => 'Expected an expression after ${t} of index [${s}:${e}]'));
       } else {
         Node expression = this._pExpression();
         if (expression != null) {
@@ -272,18 +270,18 @@ class Parser {
       );
     } else if (token[0] == TOKEN_TYPE.OPEN_PARENTHESIS) {
       if (_peek(TOKEN_TYPE.CLOSE_PARENTHESIS)) {
-        this._errors.add(Error(this._str, token, (String t, int s, int e) => 'Expected an operand after token $t of index [${s}:${e}]!'));
+        this._errors.add(ParserError(token, (String t, int s, int e) => 'Expected an operand after token $t of index [${s}:${e}]!'));
         ++this._index;
         return null;
       }
       Node rCalc = this._pExpression();
       if (rCalc != null) {
-        if (this._expect(TOKEN_TYPE.CLOSE_PARENTHESIS) == null) {
+        if (this._expect(TOKEN_TYPE.CLOSE_PARENTHESIS)) {
           ++this._index;
           return rCalc;
         }
       } else {
-        this._errors.add(Error(this._str, token, (String t, int s, int e) => 'Expected an operand after token $t of index [${s}:${e}]!'));
+        this._errors.add(ParserError(token, (String t, int s, int e) => 'Expected an operand after token $t of index [${s}:${e}]!'));
         this._expect(TOKEN_TYPE.CLOSE_PARENTHESIS);
       }
       return null;
@@ -292,18 +290,18 @@ class Parser {
       if (this._peek(TOKEN_TYPE.OPEN_PARENTHESIS)) {
         ++this._index;
         if (this._peek(TOKEN_TYPE.CLOSE_PARENTHESIS)) {
-          this._errors.add(Error(this._str, this._tokens[this._index], (String t, int s, int e) => 'Expected an argument after token $t of index [${s}:${e}]!'));
+          this._errors.add(ParserError(this._tokens[this._index], (String t, int s, int e) => 'Expected an argument after token $t of index [${s}:${e}]!'));
           ++this._index;
           return null;
         }
         Node arguments = this._pArgument();
         if (arguments != null) {
-          if (this._expect(TOKEN_TYPE.CLOSE_PARENTHESIS) == null) {
+          if (this._expect(TOKEN_TYPE.CLOSE_PARENTHESIS)) {
             ++this._index;
             rCalc = FunctionCall(rCalc, arguments);
           }
         } else {
-          this._errors.add(Error(this._str, this._tokens[this._index], (String t, int s, int e) => 'Expected an operand after token $t of index [${s}:${e}]!'));
+          this._errors.add(ParserError(this._tokens[this._index], (String t, int s, int e) => 'Expected an operand after token $t of index [${s}:${e}]!'));
           this._expect(TOKEN_TYPE.CLOSE_PARENTHESIS);
         }
       }
@@ -314,7 +312,7 @@ class Parser {
     if (!this._peek(TOKEN_TYPE.EOF)) {
       return this._pExpression();
     } 
-    this._errors.add(Error(this._str, this._tokens[this._index + 1], (String t, int s, int e) => 'Unexpected $t at index [${s}:${e}]!'));
+    this._errors.add(ParserError(this._tokens[this._index + 1], (String t, int s, int e) => 'Unexpected $t at index [${s}:${e}]!'));
     return null;    
   }
 
@@ -340,7 +338,7 @@ class Parser {
         parameters.add(parameter);
         this._pArgumentPrime(parameters);
       } else {
-        this._errors.add(Error(this._str, this._tokens[this._index], (String t, int s, int e) => 'Expect argument after comma of index [${s}:${e}]!'));
+        this._errors.add(ParserError(this._tokens[this._index], (String t, int s, int e) => 'Expect argument after comma of index [${s}:${e}]!'));
       }
       return;
     } else if (token[0] != TOKEN_TYPE.COMMA && token[0] != TOKEN_TYPE.CLOSE_PARENTHESIS && token[0] != TOKEN_TYPE.ARROW && token[0] != TOKEN_TYPE.EOF) {
@@ -375,7 +373,7 @@ class Parser {
         arguments.add(argument);
         this._pArgumentPrime(arguments);
       } else {
-        this._errors.add(Error(this._str, this._tokens[this._index], (String t, int s, int e) => 'Expect argument after comma of index [${s}:${e}]!'));
+        this._errors.add(ParserError(this._tokens[this._index], (String t, int s, int e) => 'Expect argument after comma of index [${s}:${e}]!'));
       }
       return;
     } 

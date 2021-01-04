@@ -5,17 +5,20 @@ import 'src/ast.dart';
 import 'src/lexer.dart';
 import 'src/parser.dart';
 import 'src/interpreter.dart';
+import 'src/interpreter_error.dart';
+
 
 void main() {
   print('''
     +======================================+
-    |Supported Operations:                 |
+    |Features:                             |
     +--------------------------------------+
     |- Addition & Subtraction              |
     |- Multiplication & Division & Modulus |
     |- Exponential                         |
     |- Assignment                          |
     |- Function                            |
+    |- Error Handling                      |
     +======================================+
   ''');
 
@@ -23,8 +26,9 @@ void main() {
     try {
       stdout.write('Enter an expression: ');
       String code = stdin.readLineSync(encoding: utf8);
+      InterpreterError.code = code;
       List<List<dynamic>> tokens = Lexer.getTokens(code);
-      AST ast = Parser().parse(tokens, code);
+      AST ast = Parser().parse(tokens);
       double result = Interpreter.interpret(ast);
       print('TOKENS: $tokens\n');
       print('AST: ${ast.toString()}\n');

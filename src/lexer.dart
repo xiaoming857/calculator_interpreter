@@ -1,3 +1,6 @@
+import 'interpreter_error.dart';
+
+
 enum TOKEN_TYPE {
   EOF,
   IDENTIFIER,
@@ -9,15 +12,18 @@ enum TOKEN_TYPE {
   OPEN_PARENTHESIS, CLOSE_PARENTHESIS,
 }
 
-class Lexer {
+
+class Lexer {   
   static bool isDigit(String value) => RegExp(r'^\d$').hasMatch(value);
   static bool isNumber(String value) => RegExp(r'^(0$|[1-9]+)\d*$|^\d+\.\d+$').hasMatch(value);
   static bool isLetter(String value) => RegExp(r'^[a-zA-Z]$').hasMatch(value);
   static bool isIdentifier(String value) => RegExp(r'^[a-zA-Z_]+[a-zA-Z\d_]*$').hasMatch(value);
 
+
   // Get tokens from a string of arithmetic expression
   static List<List<dynamic>> getTokens(String str) {
-    List<List<dynamic>> tokens = List<List<dynamic>>();
+    final List<InterpreterError> errors = [];
+    final List<List<dynamic>> tokens = List<List<dynamic>>();
 
     int i = 0; // Index
     while (i < str.length) {
@@ -52,9 +58,8 @@ class Lexer {
 
             temp = temp.trimRight(); // Remove succeeding spaces
             int iEnd = iStart + temp.length - 1; // End index
-
             if (isNumber(temp)) tokens.add([TOKEN_TYPE.NUMBER, temp, [iStart, iEnd]]); // Valid number
-            else throw Exception('Unexpected space between digits of index range [${iStart}, ${iEnd}]:\n\t${str}\n\t${' ' * (iStart+temp.indexOf(' '))}^'); // Invalid number
+            else errors.add(LexerError([iStart, iEnd], (String str, int s, int e) => 'Invalid number (contains spaces) at index [${s}:${e}]!'));
 
             continue;
 
@@ -74,20 +79,23 @@ class Lexer {
                 default: tokens.add([TOKEN_TYPE.IDENTIFIER, temp, [iStart, iEnd]]);
               }
             }
-            else throw Exception('Invalid identifier ($temp) of index range [$iStart, $iEnd]:\n\t${str}\n\t${' ' * iStart}^${'-' * (iEnd - iStart)}^'); // Invalid identifier
+            else errors.add(LexerError([iStart, iEnd], (String str, int s, int e) => 'Invalid identifier ${str} at index [${s}:${e}]!'));
             
             continue;
             
           } else {
-            throw Exception('Invalid character (${str[i]}) at index [${iStart}]:\n\t${str}\n\t${' ' * (iStart)}^');
+            errors.add(LexerError([i, i], (String str, int s, int e) => 'Invalid character ${str} at index [${s}:${e}]!'));
           }
         }
       }
-
       i++;
     }
-
     tokens.add([TOKEN_TYPE.EOF, '\$', [i, i]]); // Marks ending
+    if (errors.length > 0) {
+      errors.forEach((e) {
+        print(e.toString());
+      });
+    }
     return tokens;
   } 
 }
