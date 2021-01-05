@@ -1,3 +1,6 @@
+import 'ast.dart';
+
+
 class InterpreterError {
   static String code;
   String _message;
@@ -49,8 +52,8 @@ class ParserError extends InterpreterError {
   List<dynamic> get token => _token.toList();
 
   ParserError(this._token, String Function(String token, int startIndex, int endIndex) message) {
-    this._message = message(this._token[0].toString(), this._token[2][0], this._token[2][1]);
-    this._visual = this._getVisual(InterpreterError.code, this._token[2][0], this._token[2][1]);
+    super._message = message(this._token[0].toString(), this._token[2][0], this._token[2][1]);
+    super._visual = this._getVisual(InterpreterError.code, this._token[2][0], this._token[2][1]);
   }
 
 
@@ -64,5 +67,23 @@ class ParserError extends InterpreterError {
       : '${' ' * (startIndex)}^${'-' * (endIndex - startIndex - 1)}^';
 
     return '${' ' * spacing}${InterpreterError.code}\n${' ' * spacing}${pointer}';
+  }
+}
+
+
+class SemanticAnalyzerError<T extends Node> extends InterpreterError {
+  final T _node; 
+  SemanticAnalyzerError(this._node, String Function(T node) message) {
+    super._message = message(this._node);
+    super._visual = this._getVisual(this._node);
+  }
+
+
+  String _getVisual(T node, {int spacing = 3}) {
+    if (node == null || spacing < 0) {
+      return null;
+    }
+
+    return '${' ' * spacing}${node.toString()}';
   }
 }

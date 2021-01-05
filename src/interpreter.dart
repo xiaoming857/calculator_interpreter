@@ -1,16 +1,29 @@
 import 'dart:math';
 
 import 'ast.dart';
+import 'interpreter_error.dart';
 import 'lexer.dart';
 import 'symbol_table.dart';
 
 class Interpreter {
+  static List<InterpreterError> _errors;
   static double interpret(AST ast) {
+    _errors = [];
     if (ast.root != null) {
-      if (ast.root is Statement) {
+      if (ast.root is Declaration) {
+        _visitDeclaration(ast.root);
+      } else if (ast.root is Statement) {
         _visitStatement(ast.root);
       } else if (ast.root is Expression) {
-        return _visitExpression(ast.root);
+        double result = _visitExpression(ast.root);
+        if (_errors.length > 0) {
+          _errors.forEach((e) {
+            print(e.toString());
+          });
+          return null;
+        }
+
+        return result;
       }
     }
 
@@ -18,12 +31,21 @@ class Interpreter {
   }
 
 
+  static void _visitDeclaration(Declaration node) {
+    if (node != null) {
+      if (node is Function) {
+        _visitFunction(node);
+      }
+    }
+    
+    return;
+  }
+
+
   static void _visitStatement(Statement node) {
     if (node != null) {
       if (node is Assignment) {
         _visitAssignment(node);
-      } else if (node is Function) {
-        _visitFunction(node);
       }
     }
 
@@ -52,8 +74,6 @@ class Interpreter {
         node,
       );
     }
-
-    SymbolTable.showSymbols();
   }
 
 
@@ -89,8 +109,8 @@ class Interpreter {
       } else if (opr == TOKEN_TYPE.ASTERISK) {
         return lOperandResult * rOperandResult;
       } else if (opr == TOKEN_TYPE.SLASH) {
-        if (rOperandResult == 0) throw Exception('Division by zero!');
-        return lOperandResult / rOperandResult;
+        if (rOperandResult != 0) return lOperandResult / rOperandResult;
+        _errors.add(SemanticAnalyzerError(node, (Node node) => 'Found division by zero!'));
       } else if (opr == TOKEN_TYPE.PERCENT) {
         return lOperandResult % rOperandResult;
       } else if (opr == TOKEN_TYPE.CARET) {
@@ -130,30 +150,41 @@ class Interpreter {
         return _visitExpression(symbol);
       }
     }
+    _errors.add(SemanticAnalyzerError(node, (Identifier node) => 'Identifier ${node.identifier} has not been initialized!'));
 
     return null;
   }
 
 
   static double _visitFunctionCall(FunctionCall node) {
-    Node symbol = SymbolTable.lookUpScopes(node.identifier.identifier);
-    if (symbol != null) {
-      if (symbol is Function && symbol.parameters.parameters.length == node.arguments.arguments.length) {
-        SymbolTable.enterScope();
-        int index = 0;
-        symbol.parameters.parameters.forEach((e) {
-          _visitAssignment(
-            Assignment(
-              Identifier(e.identifier),
-              node.arguments.arguments[index++],
-            ),
-          );
-        });
-        double result = _visitExpression(symbol.expression);
-        SymbolTable.exitScope();
-        return result;
+    try {
+      Node symbol = SymbolTable.lookUpScopes(node.identifier.identifier);
+      if (symbol != null) {
+        if (symbol is Function && symbol.parameters.parameters.length == node.arguments.arguments.length) {
+          SemanticAnalyzerError error = SymbolTable.enterScope(SCOPE_TYPE.FUNCTION, symbol.identifier.identifier);
+          if (error != null) {
+            _errors.add(error);
+            return null;
+          }
+          int index = 0;
+          symbol.parameters.parameters.forEach((e) {
+            _visitAssignment(
+              Assignment(
+                Identifier(e.identifier),
+                node.arguments.arguments[index++],
+              ),
+            );
+          });
+          double result = _visitExpression(symbol.expression);
+          SymbolTable.exitScope();
+          return result;
+        }
       }
+      _errors.add(SemanticAnalyzerError(node, (FunctionCall node) => 'Identifier ${node.identifier.identifier} has not been initialized!'));
+    } catch (e) {
+      _errors.add(SemanticAnalyzerError(node, (FunctionCall node) => e.toString()));
     }
+    
 
     return null;
   }
