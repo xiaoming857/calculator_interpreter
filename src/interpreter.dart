@@ -110,10 +110,14 @@ class Interpreter {
         return lOperandResult * rOperandResult;
       } else if (opr == TOKEN_TYPE.SLASH) {
         if (rOperandResult != 0) return lOperandResult / rOperandResult;
-        _errors.add(SemanticAnalyzerError(node, (Node node) => 'Found division by zero!'));
+        _errors.add(SemanticAnalyzerError(node, (Node node) => 'Invalid division by zero!'));
       } else if (opr == TOKEN_TYPE.PERCENT) {
         return lOperandResult % rOperandResult;
       } else if (opr == TOKEN_TYPE.CARET) {
+        if (lOperandResult < 0 && rOperandResult % 1 != 0) {
+          _errors.add(SemanticAnalyzerError(node, (Node node) => 'Invalid root for negative numbers!'));
+          return null;
+        }
         return pow(lOperandResult, rOperandResult);
       }
     }
