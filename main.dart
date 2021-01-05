@@ -32,7 +32,7 @@ void main() {
       double result = Interpreter.interpret(ast);
       print('TOKENS: $tokens\n');
       print('AST: ${ast.toString()}\n');
-      print('RESULT: $result');
+      print('RESULT: $result\n\n\n');
     } catch (e) {
       print(e);
     }
