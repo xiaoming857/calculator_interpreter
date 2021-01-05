@@ -23,10 +23,18 @@ class Node {
 }
 
 
+class Declaration extends Node {
+  @override
+  String toString() {
+    return 'Declaration()';
+  }
+}
+
+
 class Statement extends Node {
   @override
   String toString() {
-    return 'Statement';
+    return 'Statement()';
   }
 }
 
@@ -55,7 +63,7 @@ class Assignment extends Statement {
 }
 
 
-class Function extends Statement {
+class Function extends Declaration {
   Identifier _identifier;
   Parameters _parameters;
   Node _expression;
