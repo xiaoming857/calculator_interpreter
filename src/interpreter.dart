@@ -9,25 +9,25 @@ class Interpreter {
   static List<InterpreterError> _errors;
   static double interpret(AST ast) {
     _errors = [];
+    double result;
     if (ast.root != null) {
       if (ast.root is Declaration) {
         _visitDeclaration(ast.root);
       } else if (ast.root is Statement) {
         _visitStatement(ast.root);
       } else if (ast.root is Expression) {
-        double result = _visitExpression(ast.root);
-        if (_errors.length > 0) {
-          _errors.forEach((e) {
-            print(e.toString());
-          });
-          return null;
-        }
-
-        return result;
+        result = _visitExpression(ast.root);
       }
     }
 
-    return null;
+    if (_errors.length > 0) {
+      _errors.forEach((e) {
+        print(e.toString());
+      });
+      return null;
+    }
+
+    return result;
   }
 
 
