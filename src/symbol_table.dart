@@ -1,5 +1,5 @@
 import 'ast.dart';
-import 'interpreter_error.dart';
+import 'errors.dart';
 
 
 enum SCOPE_TYPE {

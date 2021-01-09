@@ -1,14 +1,12 @@
 import 'dart:math';
 
 import 'ast.dart';
-import 'interpreter_error.dart';
+import 'errors.dart';
 import 'lexer.dart';
 import 'symbol_table.dart';
 
 class Interpreter {
-  static List<InterpreterError> _errors;
   static double interpret(AST ast) {
-    _errors = [];
     double result;
     if (ast.root != null) {
       if (ast.root is Declaration) {
@@ -20,14 +18,7 @@ class Interpreter {
       }
     }
 
-    if (_errors.length > 0) {
-      _errors.forEach((e) {
-        print(e.toString());
-      });
-      return null;
-    }
-
-    return result;
+    return Errors.hasError() ? null : result;
   }
 
 
@@ -110,12 +101,12 @@ class Interpreter {
         return lOperandResult * rOperandResult;
       } else if (opr == TOKEN_TYPE.SLASH) {
         if (rOperandResult != 0) return lOperandResult / rOperandResult;
-        _errors.add(SemanticAnalyzerError(node, (Node node) => 'Invalid division by zero!'));
+        Errors.addError(SemanticAnalyzerError(node, (Node node) => 'Invalid division by zero!'));
       } else if (opr == TOKEN_TYPE.PERCENT) {
         return lOperandResult % rOperandResult;
       } else if (opr == TOKEN_TYPE.CARET) {
         if (lOperandResult < 0 && rOperandResult % 1 != 0) {
-          _errors.add(SemanticAnalyzerError(node, (Node node) => 'Invalid root for negative numbers!'));
+          Errors.addError(SemanticAnalyzerError(node, (Node node) => 'Invalid root for negative numbers!'));
           return null;
         }
         return pow(lOperandResult, rOperandResult);
@@ -154,7 +145,7 @@ class Interpreter {
         return _visitExpression(symbol);
       }
     }
-    _errors.add(SemanticAnalyzerError(node, (Identifier node) => 'Identifier ${node.identifier} has not been initialized!'));
+    Errors.addError(SemanticAnalyzerError(node, (Identifier node) => 'Identifier ${node.identifier} has not been initialized!'));
 
     return null;
   }
@@ -167,7 +158,7 @@ class Interpreter {
         if (symbol is Function && symbol.parameters.parameters.length == node.arguments.arguments.length) {
           SemanticAnalyzerError error = SymbolTable.enterScope(SCOPE_TYPE.FUNCTION, symbol.identifier.identifier);
           if (error != null) {
-            _errors.add(error);
+            Errors.addError(error);
             return null;
           }
           int index = 0;
@@ -184,9 +175,9 @@ class Interpreter {
           return result;
         }
       }
-      _errors.add(SemanticAnalyzerError(node, (FunctionCall node) => 'Identifier ${node.identifier.identifier} has not been initialized!'));
+      Errors.addError(SemanticAnalyzerError(node, (FunctionCall node) => 'Identifier ${node.identifier.identifier} has not been initialized!'));
     } catch (e) {
-      _errors.add(SemanticAnalyzerError(node, (FunctionCall node) => e.toString()));
+      Errors.addError(SemanticAnalyzerError(node, (FunctionCall node) => e.toString()));
     }
     
 
