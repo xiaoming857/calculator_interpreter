@@ -84,9 +84,6 @@ class Parser {
 
       if (this._peek(TOKEN_TYPE.OPEN_PARENTHESIS)) {
         token = this._tokens[++this._index];
-        if (this._peek(TOKEN_TYPE.CLOSE_PARENTHESIS)) {
-          
-        }
       } else {
         Errors.addError(ParserError(token, (String t, int s, int e) => 'Expected an open parenthesis after ${t} of index [${s}:${e}]!'));
       }
@@ -365,7 +362,7 @@ class Parser {
         parameters.add(parameter);
         this._pArgumentPrime(parameters);
       } else {
-        Errors.addError(ParserError(this._tokens[this._index], (String t, int s, int e) => 'Expect argument after comma of index [${s}:${e}]!'));
+        Errors.addError(ParserError(this._tokens[this._index], (String t, int s, int e) => 'Expect parameter after comma of index [${s}:${e}]!'));
       }
       return;
     } else if (token[0] != TOKEN_TYPE.COMMA && token[0] != TOKEN_TYPE.CLOSE_PARENTHESIS && token[0] != TOKEN_TYPE.ARROW && token[0] != TOKEN_TYPE.EOF) {
