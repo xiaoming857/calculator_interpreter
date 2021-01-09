@@ -30,13 +30,17 @@ void main() {
       List<List<dynamic>> tokens = Lexer().getTokens(code);
       AST ast = Parser().parse(tokens);
       double result = Interpreter.interpret(ast);
+      print('');
       print('TOKENS: $tokens\n');
       print('AST: ${ast.toString()}\n');
-      print('RESULT: $result\n\n\n');
+      print('RESULT: $result\n\n');
 
       if (Errors.hasError()) {
         Errors.printErrors();
       }
+      Errors.clear();
+
+      print('');
     } catch (e) {
       print(e);
     }
