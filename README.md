@@ -141,6 +141,6 @@ A simple calculator interpreter implemented using Dart programming language.
 >
 > 
 >
-> Error: Unexpected TOKEN_TYPE.PLUS at index [3:3]!
->    x ++ 1
+> Error: Unexpected TOKEN_TYPE.PLUS at index [3:3]!</br>
+>    x ++ 1</br>
 >       ^
