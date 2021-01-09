@@ -5,7 +5,11 @@ import 'errors.dart';
 import 'lexer.dart';
 import 'symbol_table.dart';
 
+
+/// The [Interpreter] class is where semantic analysis is done as well as the process of calculating the result.
 class Interpreter {
+  /// The [interpret] method is called to run the process. It accepts an [AST] and returns a double if the calculation
+  /// is successful, otherwise a null. 
   static double interpret(AST ast) {
     double result;
     if (ast.root != null) {
@@ -15,13 +19,14 @@ class Interpreter {
         _visitStatement(ast.root);
       } else if (ast.root is Expression) {
         result = _visitExpression(ast.root);
-      }
+      } 
     }
 
     return Errors.hasError() ? null : result;
   }
 
 
+  /// [_visitDeclaration] is called if there is a [Declaration] node or its children in the ast
   static void _visitDeclaration(Declaration node) {
     if (node != null) {
       if (node is Function) {
@@ -33,6 +38,7 @@ class Interpreter {
   }
 
 
+  /// [_visitStatement] is called if there is a [Statement] node or its children in the ast
   static void _visitStatement(Statement node) {
     if (node != null) {
       if (node is Assignment) {
@@ -44,6 +50,7 @@ class Interpreter {
   }
 
 
+  /// [_visitAssignment] is called if there is a [Assignment] node if its children in the ast
   static void _visitAssignment(Assignment node) {
     double result = _visitExpression(node.expression);
     if (result != null) {
@@ -57,6 +64,7 @@ class Interpreter {
   }
 
 
+  /// [_visitFunction] is called if there is a [Function] node or its children in the ast 
   static void _visitFunction(Function node) {
     Expression expression = node.expression;
     if (expression != null) {
@@ -68,6 +76,7 @@ class Interpreter {
   }
 
 
+  /// [_visitExpression] is called if there is an [Expression] node or its children in the ast
   static double _visitExpression(Expression node) {
     if (node != null) {
       if (node is BinaryOperation) {
@@ -76,8 +85,6 @@ class Interpreter {
         return _visitUnaryOperation(node);
       } else if (node is Number) {
         return _visitNumber(node);
-      } else if (node is Identifier) {
-        return _visitIdentifier(node);
       } else if (node is FunctionCall) {
         return _visitFunctionCall(node);
       }
@@ -87,6 +94,7 @@ class Interpreter {
   }
 
 
+  /// [_visitBinaryOperation] is called if there is a [BinaryOperation] node or its children in the ast
   static double _visitBinaryOperation(BinaryOperation node) {
     double lOperandResult = (node.lOperand is Expression) ? _visitExpression(node.lOperand) : null;
     double rOperandResult = (node.rOperand is Expression) ? _visitExpression(node.rOperand) : null;
@@ -117,6 +125,7 @@ class Interpreter {
   }
 
 
+  /// [_visitUnaryOperation] is called if there is a [UnaryOperation] node or its children in the ast
   static double _visitUnaryOperation(UnaryOperation node) {
     double operandResult;
     if (node.operand is Expression) {
@@ -133,11 +142,13 @@ class Interpreter {
   }
 
 
+  /// [Number] is called if there is a [Number] node or its children in the ast
   static double _visitNumber(Number node) {
     return node.value;
   }
 
 
+  /// [_visitIdentifier] is called if there is a [Identifier] node or its children in the ast
   static double _visitIdentifier(Identifier node) {
     Node symbol = SymbolTable.lookUpScopes(node.identifier);
     if (symbol != null) {
@@ -151,6 +162,7 @@ class Interpreter {
   }
 
 
+  /// [_visitFunctionCall] is called if there is a [FunctionCall] node or its children in the ast
   static double _visitFunctionCall(FunctionCall node) {
     try {
       Node symbol = SymbolTable.lookUpScopes(node.identifier.identifier);

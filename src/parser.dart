@@ -3,17 +3,29 @@ import 'ast.dart';
 import 'errors.dart';
 
 
+/// The [Parser] is used for syntax analysis, one of the stage in an interpreter.
+/// It receives a list of tokens and generates an ast tree used for semantic analysis.
+/// The parser itself uses top down LL(1) recursive decent parser.
 class Parser {
+  /// The [_tokens] is used to temporarily hold the inputted tokens which will be used in methods
+  /// within the class.
   List<List<dynamic>> _tokens;
+
+  /// The [_index] shows the current position of the parse. It starts with -1, everytime a parse/method is called,
+  /// it will be incremented by 1. If the parse/method is incorrect, the [_index] will be decremented by 1.
   int _index = -1;
 
 
+  /// The [parse] method is called to parse the list of tokens. It receives a list of tokens and returns
+  /// a parse tree if no errors occured.
   AST parse(List<List<dynamic>> tokens) {
     this._tokens = tokens;
     return AST(this._pStart());
   }
   
 
+  /// The [_mustBe] method is used to skip a certain invalid tokens until an expected token appears or
+  /// reached [EOF].
   void _mustBe(List<TOKEN_TYPE> tokenTypes) {
     List<dynamic>token = this._tokens[this._index];
     while (!tokenTypes.contains(token[0]) && token[0] != TOKEN_TYPE.EOF) {
@@ -24,6 +36,9 @@ class Parser {
   }
 
 
+  /// The [_expect] method expects the next token. [_index] will not be incremented if the next token
+  /// matches the expectation, it will only returns a true. Otherwise, an error will be added into the
+  /// [Errors] class and a false will be returned from the method. 
   bool _expect(TOKEN_TYPE tokenType) {
     List<dynamic> token = this._tokens[this._index + 1];
     if (token[0] == tokenType) return true;
@@ -32,11 +47,16 @@ class Parser {
   }
 
 
+  /// The [_peek] method is used to peek the next token. Unlike [_expect], [_peek] simply return true if
+  /// it matches the expectation, else it will return a false.
   bool _peek(TOKEN_TYPE token, [step = 1]) {
     return (this._tokens[this._index + step][0] == token);
   }
 
 
+  /// The [_pStart] method is used to determine if a the input is a declaration,
+  /// statement, or an expression and then checks if it ends with an [EOF].
+  /// It will skip the parser if the token starts with an [EOF].
   Node _pStart() {
     if (this._peek(TOKEN_TYPE.EOF)) return null;
     Node tree = this._pDeclaration();
@@ -48,6 +68,9 @@ class Parser {
   }
 
 
+  /// The [_pDeclaration] is used to parse function declarations. A function must starts
+  /// with a [func] keyword, followed by a function name, at least one parameter within
+  /// a pair of parentheses, an arrow, and finally the expression.
   Node _pDeclaration() {
     ++this._index;
     List<dynamic> token = this._tokens[this._index];
@@ -105,6 +128,8 @@ class Parser {
   }
 
   
+  /// The [_pStatement] is used to parse any assignment statements. A statement starts with
+  /// a variable name, followed by an equal sign and the expression to be assigned to the variable.
   Node _pStatement() {
     ++this._index;
     List<dynamic> token = this._tokens[this._index];
@@ -128,7 +153,8 @@ class Parser {
   }
 
 
-
+  /// The [_pExpression] is used to parse expressions, it starts with the lowest precedence,
+  /// which is addition and subtraction.
   Node _pExpression() {
     Node lVal = this._pTerm();
     if (lVal != null) {
@@ -144,6 +170,8 @@ class Parser {
   }
 
 
+  /// The [_pExpressionPrime] is a right recursion for [_pExpression]. It implements the left
+  /// associativity.
   Node _pExpressionPrime(Node lVal) {
     ++this._index;
     List<dynamic> token = this._tokens[this._index];
@@ -170,6 +198,8 @@ class Parser {
   }
 
 
+  /// [_pTerm] is the next level precedence which covers multiplication, division, and
+  /// modulo parse.
   Node _pTerm() {
     Node lVal = this._pPower();
     if (lVal != null) {
@@ -181,6 +211,7 @@ class Parser {
   }
 
 
+  /// [_pTermPrime] is the right recursion for [_pTerm]. It implements the left associativity.
   Node _pTermPrime(Node lVal) {
     ++this._index;
     List<dynamic> token = this._tokens[this._index];
@@ -200,7 +231,9 @@ class Parser {
     return null;
   }
 
-  
+
+  /// The [_pPower] is a higher precedence in the arithmetic operation, which covers only
+  /// exponential parse.  
   Node _pPower() {
     Node lVal = this._pFactor();
     if (lVal != null) {
@@ -212,6 +245,12 @@ class Parser {
   }
 
 
+  /// The [_pPowerPrime] is the right recurssion for [_pPower]. Contrasting to [_pExpressionPrime]
+  /// and [_pTermPrime], [_pPower] implements a right associativity. So,
+  /// 
+  /// 1 ^ 2 ^ 3
+  /// is equal to:
+  /// (1 ^ (2 ^ 3))
   Node _pPowerPrime(Node lVal) {
     ++this._index;
     List<dynamic> token = this._tokens[this._index];
@@ -239,6 +278,9 @@ class Parser {
   }
 
 
+  /// The [_pFactor] is in fact the last parse for an expression. It will be either
+  /// an unary operation, a number, an identifier, or possibly an open parenthesis which
+  /// leads to a higher precedence.
   Node _pFactor() {
     ++this._index;
     List<dynamic> token = this._tokens[this._index];
@@ -298,6 +340,9 @@ class Parser {
   }
 
 
+  /// The [_pParameter] is used to parse parameters which are divided by commas.
+  /// It might seems similar to [_pArgument]. However, the [_pParameter] is
+  /// the term used in function. The parameter can only be in the form of an identifier.
   Node _pParameter() {
     Identifier parameter = this._pIdentifier();
     List<Identifier> parameters = [];
@@ -310,6 +355,7 @@ class Parser {
   }
 
 
+  /// The [_pParameterPrime] is the right recursion for [_pParameter]
   void _pParameterPrime(List<Identifier> parameters) {
     ++this._index;
     List<dynamic> token = this._tokens[this._index];
@@ -333,6 +379,9 @@ class Parser {
   }
 
 
+  /// The [_pArgument] is used to parse arguments which are divided by commas.
+  /// It might seems similar to [_pParameter]. However, the [_pArgument] is
+  /// the term used in function call. The argument can be in the form of any expressions.
   Node _pArgument() {
     Node argument = this._pExpression();
     List<Node> arguments = [];
@@ -345,6 +394,7 @@ class Parser {
   }
 
 
+  /// The [_pArgument] is ts the right recursion for [_pArgument]
   void _pArgumentPrime(List<Node> arguments) {
     ++this._index;
     List<dynamic> token = this._tokens[this._index];
@@ -363,6 +413,8 @@ class Parser {
   }
 
 
+  /// The [_pIdentifier] is used to parse an identifier. It is mostly used in assignments, functions, and
+  /// parameters. The identifers in arguments use the identifier parse from expression.
   Identifier _pIdentifier() {
     ++this._index;
     List<dynamic> token = this._tokens[this._index];
