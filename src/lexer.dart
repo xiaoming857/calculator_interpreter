@@ -1,4 +1,4 @@
-import 'interpreter_error.dart';
+import 'errors.dart';
 
 
 enum TOKEN_TYPE {
@@ -13,39 +13,39 @@ enum TOKEN_TYPE {
 }
 
 
-class Lexer {   
+class Lexer {
   static bool isDigit(String value) => RegExp(r'^\d$').hasMatch(value);
   static bool isNumber(String value) => RegExp(r'^(0$|[1-9]+)\d*$|^\d+\.\d+$').hasMatch(value);
   static bool isLetter(String value) => RegExp(r'^[a-zA-Z]$').hasMatch(value);
   static bool isIdentifier(String value) => RegExp(r'^[a-zA-Z_]+[a-zA-Z\d_]*$').hasMatch(value);
 
 
-  // Get tokens from a string of arithmetic expression
-  static List<List<dynamic>> getTokens(String str) {
-    final List<InterpreterError> errors = [];
-    final List<List<dynamic>> tokens = List<List<dynamic>>();
+  final List<List<dynamic>> _tokens = List<List<dynamic>>();
 
+
+  // Get tokens from a string of arithmetic expression
+  List<List<dynamic>> getTokens(String str) {
     int i = 0; // Index
     while (i < str.length) {
       switch (str[i]) {
         case ' ': break;
-        case '=': tokens.add([TOKEN_TYPE.EQUAL, '=', [i, i]]); break;
-        case '+': tokens.add([TOKEN_TYPE.PLUS, '+', [i, i]]); break;
+        case '=': this._tokens.add([TOKEN_TYPE.EQUAL, '=', [i, i]]); break;
+        case '+': this._tokens.add([TOKEN_TYPE.PLUS, '+', [i, i]]); break;
         case '-': {
           if (i + 1 < str.length && str[i + 1] == '>') {
-            tokens.add([TOKEN_TYPE.ARROW, '->', [i, i + 1]]);
+            this._tokens.add([TOKEN_TYPE.ARROW, '->', [i, i + 1]]);
             ++i;
           } else {
-            tokens.add([TOKEN_TYPE.MINUS, '-', [i, i]]);
+            this._tokens.add([TOKEN_TYPE.MINUS, '-', [i, i]]);
           }
         } break;
-        case '*': tokens.add([TOKEN_TYPE.ASTERISK, '*', [i, i]]); break;
-        case '/': tokens.add([TOKEN_TYPE.SLASH, '/', [i, i]]); break;
-        case '^': tokens.add([TOKEN_TYPE.CARET, '^', [i, i]]); break;
-        case '%': tokens.add([TOKEN_TYPE.PERCENT, '%', [i, i]]); break;
-        case '(': tokens.add([TOKEN_TYPE.OPEN_PARENTHESIS, '(', [i, i]]); break;
-        case ')': tokens.add([TOKEN_TYPE.CLOSE_PARENTHESIS,')', [i, i]]); break;
-        case ',': tokens.add([TOKEN_TYPE.COMMA, ',', [i, i]]); break;
+        case '*': this._tokens.add([TOKEN_TYPE.ASTERISK, '*', [i, i]]); break;
+        case '/': this._tokens.add([TOKEN_TYPE.SLASH, '/', [i, i]]); break;
+        case '^': this._tokens.add([TOKEN_TYPE.CARET, '^', [i, i]]); break;
+        case '%': this._tokens.add([TOKEN_TYPE.PERCENT, '%', [i, i]]); break;
+        case '(': this._tokens.add([TOKEN_TYPE.OPEN_PARENTHESIS, '(', [i, i]]); break;
+        case ')': this._tokens.add([TOKEN_TYPE.CLOSE_PARENTHESIS,')', [i, i]]); break;
+        case ',': this._tokens.add([TOKEN_TYPE.COMMA, ',', [i, i]]); break;
         default: {
           String temp = '';
           int iStart = i; // Start index
@@ -58,8 +58,8 @@ class Lexer {
 
             temp = temp.trimRight(); // Remove succeeding spaces
             int iEnd = iStart + temp.length - 1; // End index
-            if (isNumber(temp)) tokens.add([TOKEN_TYPE.NUMBER, temp, [iStart, iEnd]]); // Valid number
-            else errors.add(LexerError([iStart, iEnd], (String str, int s, int e) => 'Invalid number (contains spaces) at index [${s}:${e}]!'));
+            if (isNumber(temp)) this._tokens.add([TOKEN_TYPE.NUMBER, temp, [iStart, iEnd]]); // Valid number
+            else Errors.addError(LexerError([iStart, iEnd], (String str, int s, int e) => 'Invalid number (contains spaces) at index [${s}:${e}]!'));
 
             continue;
 
@@ -75,27 +75,22 @@ class Lexer {
 
             if (isIdentifier(temp)) {
               switch (temp) {
-                case 'func': tokens.add([TOKEN_TYPE.FUNCTION, temp, [iStart, iEnd]]); break;
-                default: tokens.add([TOKEN_TYPE.IDENTIFIER, temp, [iStart, iEnd]]);
+                case 'func': this._tokens.add([TOKEN_TYPE.FUNCTION, temp, [iStart, iEnd]]); break;
+                default: this._tokens.add([TOKEN_TYPE.IDENTIFIER, temp, [iStart, iEnd]]);
               }
             }
-            else errors.add(LexerError([iStart, iEnd], (String str, int s, int e) => 'Invalid identifier ${str} at index [${s}:${e}]!'));
+            else Errors.addError(LexerError([iStart, iEnd], (String str, int s, int e) => 'Invalid identifier ${str} at index [${s}:${e}]!'));
             
             continue;
             
           } else {
-            errors.add(LexerError([i, i], (String str, int s, int e) => 'Invalid character ${str} at index [${s}:${e}]!'));
+            Errors.addError(LexerError([i, i], (String str, int s, int e) => 'Invalid character ${str} at index [${s}:${e}]!'));
           }
         }
       }
       i++;
     }
-    tokens.add([TOKEN_TYPE.EOF, '\$', [i, i]]); // Marks ending
-    if (errors.length > 0) {
-      errors.forEach((e) {
-        print(e.toString());
-      });
-    }
-    return tokens;
+    this._tokens.add([TOKEN_TYPE.EOF, '\$', [i, i]]); // Marks ending
+    return this._tokens;
   } 
 }
