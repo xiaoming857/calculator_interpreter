@@ -85,6 +85,8 @@ class Interpreter {
         return _visitUnaryOperation(node);
       } else if (node is Number) {
         return _visitNumber(node);
+      } else if (node is Identifier) {
+        return _visitIdentifier(node);
       } else if (node is FunctionCall) {
         return _visitFunctionCall(node);
       }
