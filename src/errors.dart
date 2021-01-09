@@ -1,6 +1,43 @@
 import 'ast.dart';
 
 
+class Errors {
+  static final List<InterpreterError> _errors = [];
+  
+
+  static List<InterpreterError> get errors => _errors.toList();
+
+
+  static bool hasError() {
+    return _errors.length != 0;
+  }
+
+
+  static hasType<T extends InterpreterError>() {
+    return _errors.whereType<T>().length != 0;
+  }
+
+
+  static void addError(InterpreterError error) {
+    _errors.add(error);
+  }
+
+
+  static clear() {
+    _errors.clear();
+  }
+
+
+  static printErrors() {
+    if (hasError()) {
+      _errors.forEach((e) {
+        print(e);
+      });
+    }
+  }
+}
+
+
 class InterpreterError {
   static String code;
   String _message;
