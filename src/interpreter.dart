@@ -166,34 +166,29 @@ class Interpreter {
 
   /// [_visitFunctionCall] is called if there is a [FunctionCall] node or its children in the ast
   static double _visitFunctionCall(FunctionCall node) {
-    try {
-      Node symbol = SymbolTable.lookUpScopes(node.identifier.identifier);
-      if (symbol != null) {
-        if (symbol is Function && symbol.parameters.parameters.length == node.arguments.arguments.length) {
-          SemanticAnalyzerError error = SymbolTable.enterScope(SCOPE_TYPE.FUNCTION, symbol.identifier.identifier);
-          if (error != null) {
-            Errors.addError(error);
-            return null;
-          }
-          int index = 0;
-          symbol.parameters.parameters.forEach((e) {
-            _visitAssignment(
-              Assignment(
-                Identifier(e.identifier),
-                node.arguments.arguments[index++],
-              ),
-            );
-          });
-          double result = _visitExpression(symbol.expression);
-          SymbolTable.exitScope();
-          return result;
+    Node symbol = SymbolTable.lookUpScopes(node.identifier.identifier);
+    if (symbol != null) {
+      if (symbol is Function && symbol.parameters.parameters.length == node.arguments.arguments.length) {
+        SemanticAnalyzerError error = SymbolTable.enterScope(SCOPE_TYPE.FUNCTION, symbol.identifier.identifier);
+        if (error != null) {
+          Errors.addError(error);
+          return null;
         }
+        int index = 0;
+        symbol.parameters.parameters.forEach((e) {
+          _visitAssignment(
+            Assignment(
+              Identifier(e.identifier),
+              node.arguments.arguments[index++],
+            ),
+          );
+        });
+        double result = _visitExpression(symbol.expression);
+        SymbolTable.exitScope();
+        return result;
       }
-      Errors.addError(SemanticAnalyzerError(node, (FunctionCall node) => 'Identifier ${node.identifier.identifier} has not been initialized!'));
-    } catch (e) {
-      Errors.addError(SemanticAnalyzerError(node, (FunctionCall node) => e.toString()));
     }
-    
+    Errors.addError(SemanticAnalyzerError(node, (FunctionCall node) => 'Identifier ${node.identifier.identifier} has not been initialized!'));
 
     return null;
   }
